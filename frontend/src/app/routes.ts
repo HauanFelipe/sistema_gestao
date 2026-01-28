@@ -1,0 +1,25 @@
+
+
+export const routes = {
+  login: "/login",
+  dashboard: "/dashboard",
+  companies: "/empresas",
+  workOrders: "/ordens-servico",
+  workOrdersPending: "/ordens-servico/pendentes",
+  workOrdersFinished: "/ordens-servico/finalizadas",
+  workOrdersCompanyDetail: "/ordens-servico/empresa/:companyId",
+  workOrderNew: "/ordens-servico/nova",
+  workOrderDetail: "/ordens-servico/:id",
+  workOrderEdit: "/ordens-servico/:id/editar",
+  fiscalFilesPending: "/servicos-recorrentes/pendentes",
+  fiscalFilesFinished: "/servicos-recorrentes/finalizados",
+  fiscalFilesCompanyDetail: "/servicos-recorrentes/empresa/:companyId",
+  calendar: "/calendario",
+  fiscalPending: "/producao-fiscal/pendentes",
+  fiscalFinished: "/producao-fiscal/finalizados",
+  fiscalCompanyDetail: "/producao-fiscal/empresa/:companyId",
+  chatstage: "/chat-stage",
+  companyNew: "/empresas/nova",
+  companyDetail: "/empresas/:id",
+  companyEdit: "/empresas/:id/editar",
+};
