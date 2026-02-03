@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState, type ReactNode } from "react";
-import { ArrowDownCircle, ArrowUpCircle, ClipboardList, Pencil, Plus, Search } from "lucide-react";
+import { ArrowDownCircle, ArrowUpCircle, ClipboardList, Pencil, Plus, Search, Trash } from "lucide-react";
 import StatCard from "../shared/StatCard";
 import Badge from "../shared/Badge";
 import EmptyState from "../shared/EmptyState";
@@ -10,6 +10,8 @@ import {
   createFiscalBatch,
   listCompanies,
   listFiscalBatches,
+  deleteFiscalBatch,
+  runFiscalProductionJobs,
   updateFiscalBatch,
 } from "../api";
 import type { Company, FiscalBatch, FiscalBatchType, FiscalSummaryRow } from "../mocks/types";
@@ -162,6 +164,15 @@ export default function Fiscal({ view = "pending" }: Props) {
       .then((rows) => setBatches(mergeFiscalBatches(rows)))
       .catch(() => setBatches([]));
 
+  const handleGenerate = async () => {
+    try {
+      await runFiscalProductionJobs();
+      refresh();
+    } catch {
+      alert("Nao foi possivel abrir os chamados do mes.");
+    }
+  };
+
   const resolveCompany = (value: string) => {
     const normalized = value.trim().toLowerCase();
     if (!normalized) return undefined;
@@ -223,10 +234,6 @@ export default function Fiscal({ view = "pending" }: Props) {
       setEditForm({ entradaNotes: "", saidaNotes: "", observacoes: "" });
       return;
     }
-    const allLaunchDone = related.every((batch) => batch.launchDone);
-    const allBillingDone = related.every((batch) => batch.billingDone);
-    const entradaBatch = [...related].reverse().find((batch) => batch.type === "Entrada");
-    const saidaBatch = [...related].reverse().find((batch) => batch.type === "Saida");
     const observacoes = [...related].reverse().find((batch) => batch.notes)?.notes ?? "";
     setEditing({ companyId, companyName });
     setEditForm({
@@ -317,6 +324,20 @@ export default function Fiscal({ view = "pending" }: Props) {
     refresh();
   };
 
+  const handleDeleteCompanyMonth = async (companyId: string) => {
+    const related = batches.filter(
+      (batch) => batch.companyId === companyId && batch.competence === competence
+    );
+    if (related.length === 0) return;
+    if (!window.confirm("Tem certeza que deseja excluir este chamado?")) return;
+    try {
+      await Promise.all(related.map((batch) => deleteFiscalBatch(batch.id)));
+      refresh();
+    } catch {
+      alert("Nao foi possivel excluir o chamado.");
+    }
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
@@ -327,24 +348,32 @@ export default function Fiscal({ view = "pending" }: Props) {
           </p>
         </div>
         {view === "pending" && (
-          <button
-            className="inline-flex items-center gap-2 rounded-xl bg-blue-600 text-white px-4 py-3 font-semibold hover:bg-blue-700"
-            onClick={() => {
-              setForm({
-                companyId: "",
-                competence: currentMonth(),
-                type: "",
-                quantity: "",
-                notes: "",
-              });
-              setCompanyQuery("");
-              setErrors({});
-              setShowForm(true);
-            }}
-          >
-            <Plus size={18} />
-            Novo Lancamento
-          </button>
+          <div className="flex flex-wrap items-center gap-2">
+            <button
+              className="inline-flex items-center gap-2 rounded-xl bg-blue-600 text-white px-4 py-3 font-semibold hover:bg-blue-700"
+              onClick={() => {
+                setForm({
+                  companyId: "",
+                  competence: currentMonth(),
+                  type: "",
+                  quantity: "",
+                  notes: "",
+                });
+                setCompanyQuery("");
+                setErrors({});
+                setShowForm(true);
+              }}
+            >
+              <Plus size={18} />
+              Novo Lancamento
+            </button>
+            <button
+              className="inline-flex items-center gap-2 rounded-xl border border-gray-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-4 py-3 font-semibold hover:bg-gray-50 dark:hover:bg-slate-800"
+              onClick={handleGenerate}
+            >
+              Abrir chamados do mes
+            </button>
+          </div>
         )}
       </div>
 
@@ -573,6 +602,13 @@ export default function Fiscal({ view = "pending" }: Props) {
                             onClick={() => openEdit(row.companyId, row.companyName)}
                           >
                             <Pencil size={16} />
+                          </button>
+                          <button
+                            className="h-9 w-9 rounded-lg border border-red-200 dark:border-red-900 bg-white dark:bg-slate-900 flex items-center justify-center hover:bg-red-50 dark:hover:bg-red-950/40 text-red-600"
+                            title="Excluir"
+                            onClick={() => handleDeleteCompanyMonth(row.companyId)}
+                          >
+                            <Trash size={16} />
                           </button>
                         </div>
                       </td>

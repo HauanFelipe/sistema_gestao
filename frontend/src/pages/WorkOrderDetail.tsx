@@ -6,7 +6,7 @@ import Badge from "../shared/Badge";
 import EmptyState from "../shared/EmptyState";
 import Modal from "../shared/Modal";
 import { addWorkOrderHistory, getWorkOrderById, updateWorkOrder } from "../api";
-import type { WorkOrder } from "../mocks/types";
+import type { WorkOrder, WorkOrderHistory } from "../mocks/types";
 
 export default function WorkOrderDetail() {
   const navigate = useNavigate();
@@ -24,7 +24,7 @@ export default function WorkOrderDetail() {
       .catch(() => setOrder(undefined));
   }, [id]);
 
-  const history = useMemo(() => order?.history ?? [], [order]);
+  const history = useMemo<WorkOrderHistory[]>(() => order?.history ?? [], [order]);
 
   if (!order) {
     return (

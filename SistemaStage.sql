@@ -1,0 +1,873 @@
+--
+-- PostgreSQL database dump
+--
+
+\restrict CIUC1wz2DDo0rzxbJ3RapP66mrsWrcPAB1dtFJgD1eAsd6FvdZ4DxlgmP7hRLLB
+
+-- Dumped from database version 18.1
+-- Dumped by pg_dump version 18.1
+
+-- Started on 2026-02-02 17:42:57
+
+SET statement_timeout = 0;
+SET lock_timeout = 0;
+SET idle_in_transaction_session_timeout = 0;
+SET transaction_timeout = 0;
+SET client_encoding = 'UTF8';
+SET standard_conforming_strings = on;
+SELECT pg_catalog.set_config('search_path', '', false);
+SET check_function_bodies = false;
+SET xmloption = content;
+SET client_min_messages = warning;
+SET row_security = off;
+
+--
+-- TOC entry 873 (class 1247 OID 16434)
+-- Name: CalendarEventType; Type: TYPE; Schema: public; Owner: postgres
+--
+
+CREATE TYPE public."CalendarEventType" AS ENUM (
+    'Visita',
+    'Treinamento'
+);
+
+
+ALTER TYPE public."CalendarEventType" OWNER TO postgres;
+
+--
+-- TOC entry 864 (class 1247 OID 16406)
+-- Name: CompanyStatus; Type: TYPE; Schema: public; Owner: postgres
+--
+
+CREATE TYPE public."CompanyStatus" AS ENUM (
+    'Ativa',
+    'Inativa'
+);
+
+
+ALTER TYPE public."CompanyStatus" OWNER TO postgres;
+
+--
+-- TOC entry 876 (class 1247 OID 16440)
+-- Name: FiscalBatchType; Type: TYPE; Schema: public; Owner: postgres
+--
+
+CREATE TYPE public."FiscalBatchType" AS ENUM (
+    'Entrada',
+    'Saida'
+);
+
+
+ALTER TYPE public."FiscalBatchType" OWNER TO postgres;
+
+--
+-- TOC entry 879 (class 1247 OID 16446)
+-- Name: FiscalFileRunStatus; Type: TYPE; Schema: public; Owner: postgres
+--
+
+CREATE TYPE public."FiscalFileRunStatus" AS ENUM (
+    'Gerado',
+    'Falhou'
+);
+
+
+ALTER TYPE public."FiscalFileRunStatus" OWNER TO postgres;
+
+--
+-- TOC entry 903 (class 1247 OID 16982)
+-- Name: UserRole; Type: TYPE; Schema: public; Owner: postgres
+--
+
+CREATE TYPE public."UserRole" AS ENUM (
+    'Admin',
+    'Colaborador'
+);
+
+
+ALTER TYPE public."UserRole" OWNER TO postgres;
+
+--
+-- TOC entry 870 (class 1247 OID 16426)
+-- Name: WorkOrderPriority; Type: TYPE; Schema: public; Owner: postgres
+--
+
+CREATE TYPE public."WorkOrderPriority" AS ENUM (
+    'Baixa',
+    'Media',
+    'Alta'
+);
+
+
+ALTER TYPE public."WorkOrderPriority" OWNER TO postgres;
+
+--
+-- TOC entry 867 (class 1247 OID 16412)
+-- Name: WorkOrderStatus; Type: TYPE; Schema: public; Owner: postgres
+--
+
+CREATE TYPE public."WorkOrderStatus" AS ENUM (
+    'Aberta',
+    'Em_andamento',
+    'Concluida',
+    'Nao_realizada',
+    'Reagendada',
+    'Cancelada'
+);
+
+
+ALTER TYPE public."WorkOrderStatus" OWNER TO postgres;
+
+SET default_tablespace = '';
+
+SET default_table_access_method = heap;
+
+--
+-- TOC entry 226 (class 1259 OID 16547)
+-- Name: CalendarEvent; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public."CalendarEvent" (
+    id text NOT NULL,
+    type public."CalendarEventType" NOT NULL,
+    "companyId" text NOT NULL,
+    date timestamp(3) without time zone NOT NULL,
+    "time" text NOT NULL,
+    location text NOT NULL,
+    responsible text NOT NULL,
+    notes text
+);
+
+
+ALTER TABLE public."CalendarEvent" OWNER TO postgres;
+
+--
+-- TOC entry 220 (class 1259 OID 16451)
+-- Name: Company; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public."Company" (
+    id text NOT NULL,
+    name text NOT NULL,
+    cnpj text,
+    contact text,
+    phone text,
+    "generatesFiscalFiles" boolean DEFAULT false NOT NULL,
+    "generatesFiscalProduction" boolean DEFAULT false NOT NULL,
+    "tipoContribuinte" text,
+    ie text,
+    "razaoSocial" text,
+    cep text,
+    rua text,
+    numero text,
+    bairro text,
+    cidade text,
+    estado text,
+    "nomeFantasia" text,
+    email text,
+    "contabilidadeNome" text,
+    "contabilidadeEmail" text,
+    "contabilidadeTelefone" text,
+    status public."CompanyStatus" DEFAULT 'Ativa'::public."CompanyStatus" NOT NULL,
+    "createdAt" timestamp(3) without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    "updatedAt" timestamp(3) without time zone NOT NULL
+);
+
+
+ALTER TABLE public."Company" OWNER TO postgres;
+
+--
+-- TOC entry 225 (class 1259 OID 16529)
+-- Name: FiscalBatch; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public."FiscalBatch" (
+    id text NOT NULL,
+    "companyId" text NOT NULL,
+    competence text NOT NULL,
+    type public."FiscalBatchType" NOT NULL,
+    quantity integer NOT NULL,
+    notes text,
+    "launchDone" boolean DEFAULT false NOT NULL,
+    "billingDone" boolean DEFAULT false NOT NULL,
+    "createdBy" text,
+    "createdAt" timestamp(3) without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL
+);
+
+
+ALTER TABLE public."FiscalBatch" OWNER TO postgres;
+
+--
+-- TOC entry 223 (class 1259 OID 16498)
+-- Name: FiscalFile; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public."FiscalFile" (
+    id text NOT NULL,
+    "companyId" text NOT NULL,
+    responsible text,
+    observation text,
+    "dayOfMonth" integer NOT NULL,
+    "nextGeneration" timestamp(3) without time zone NOT NULL,
+    active boolean DEFAULT true NOT NULL,
+    "createdAt" timestamp(3) without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    "updatedAt" timestamp(3) without time zone NOT NULL
+);
+
+
+ALTER TABLE public."FiscalFile" OWNER TO postgres;
+
+--
+-- TOC entry 224 (class 1259 OID 16514)
+-- Name: FiscalFileRun; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public."FiscalFileRun" (
+    id text NOT NULL,
+    "companyId" text NOT NULL,
+    competence text NOT NULL,
+    "generatedAt" timestamp(3) without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    "generatedBy" text NOT NULL,
+    notes text,
+    status public."FiscalFileRunStatus" DEFAULT 'Gerado'::public."FiscalFileRunStatus" NOT NULL
+);
+
+
+ALTER TABLE public."FiscalFileRun" OWNER TO postgres;
+
+--
+-- TOC entry 228 (class 1259 OID 17473)
+-- Name: SystemLog; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public."SystemLog" (
+    id text NOT NULL,
+    type text NOT NULL,
+    message text NOT NULL,
+    "createdAt" timestamp(3) without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL
+);
+
+
+ALTER TABLE public."SystemLog" OWNER TO postgres;
+
+--
+-- TOC entry 227 (class 1259 OID 16987)
+-- Name: User; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public."User" (
+    id text NOT NULL,
+    name text NOT NULL,
+    email text,
+    "passwordHash" text NOT NULL,
+    role public."UserRole" DEFAULT 'Colaborador'::public."UserRole" NOT NULL,
+    active boolean DEFAULT true NOT NULL,
+    "createdAt" timestamp(3) without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    "updatedAt" timestamp(3) without time zone NOT NULL
+);
+
+
+ALTER TABLE public."User" OWNER TO postgres;
+
+--
+-- TOC entry 221 (class 1259 OID 16469)
+-- Name: WorkOrder; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public."WorkOrder" (
+    id text NOT NULL,
+    number text NOT NULL,
+    "companyId" text NOT NULL,
+    type text NOT NULL,
+    responsible text NOT NULL,
+    "dueDate" timestamp(3) without time zone NOT NULL,
+    priority public."WorkOrderPriority" NOT NULL,
+    status public."WorkOrderStatus" NOT NULL,
+    description text,
+    "createdAt" timestamp(3) without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL
+);
+
+
+ALTER TABLE public."WorkOrder" OWNER TO postgres;
+
+--
+-- TOC entry 222 (class 1259 OID 16486)
+-- Name: WorkOrderHistory; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public."WorkOrderHistory" (
+    id text NOT NULL,
+    "workOrderId" text NOT NULL,
+    title text NOT NULL,
+    description text,
+    at timestamp(3) without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL
+);
+
+
+ALTER TABLE public."WorkOrderHistory" OWNER TO postgres;
+
+--
+-- TOC entry 219 (class 1259 OID 16391)
+-- Name: _prisma_migrations; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public._prisma_migrations (
+    id character varying(36) NOT NULL,
+    checksum character varying(64) NOT NULL,
+    finished_at timestamp with time zone,
+    migration_name character varying(255) NOT NULL,
+    logs text,
+    rolled_back_at timestamp with time zone,
+    started_at timestamp with time zone DEFAULT now() NOT NULL,
+    applied_steps_count integer DEFAULT 0 NOT NULL
+);
+
+
+ALTER TABLE public._prisma_migrations OWNER TO postgres;
+
+--
+-- TOC entry 5119 (class 0 OID 16547)
+-- Dependencies: 226
+-- Data for Name: CalendarEvent; Type: TABLE DATA; Schema: public; Owner: postgres
+--
+
+COPY public."CalendarEvent" (id, type, "companyId", date, "time", location, responsible, notes) FROM stdin;
+\.
+
+
+--
+-- TOC entry 5113 (class 0 OID 16451)
+-- Dependencies: 220
+-- Data for Name: Company; Type: TABLE DATA; Schema: public; Owner: postgres
+--
+
+COPY public."Company" (id, name, cnpj, contact, phone, "generatesFiscalFiles", "generatesFiscalProduction", "tipoContribuinte", ie, "razaoSocial", cep, rua, numero, bairro, cidade, estado, "nomeFantasia", email, "contabilidadeNome", "contabilidadeEmail", "contabilidadeTelefone", status, "createdAt", "updatedAt") FROM stdin;
+4b869fed-e1d9-46db-a1fb-5795dae26cd6	C H A GOMES	40.940.271/0001-41	\N	\N	t	f			C H A GOMES		Avenida Brasília, 2614, - até 1399/1400, Amaro Lanari, Coronel Fabriciano, MG - CEP: 35171346.  LOJA 1					\N	triadedochurrasco2020@hotmail.com	\N	\N	\N	Ativa	2026-01-26 17:02:40.727	2026-02-02 19:57:50.756
+60e0fc19-4aef-44e3-9219-705d6e32db19	AGROPECUARIA BARBOSA E SILVA LTDA	28.627.802/0001-45	\N	\N	t	f	Contribuinte ICMS	0039505630042	AGROPECUARIA BARBOSA E SILVA LTDA		R CHICO BOM, 101, CENTRO, Bugre, MG - CEP: 35193000.					\N	raquelrrc@hotmail.com	\N	\N	\N	Ativa	2026-01-26 17:02:40.648	2026-01-26 18:39:45.4
+dd06bb76-760f-4364-915a-b565a7dfef25	APARECIDA DAS DORES FERREIRA	19.066.069/0001-46	\N	\N	f	f	\N	\N	APARECIDA DAS DORES FERREIRA 02701799686	\N	AV SELIM JOSE DE SALES, 1476, CANAA, Ipatinga, MG - CEP: 35164213.	\N	\N	\N	\N	\N	\N	\N	\N	\N	Ativa	2026-01-26 17:02:40.686	2026-01-26 17:02:40.686
+80445086-3c63-4b97-a18c-af7717f40d5c	ATAIDES LANTERNAGEM E PINTURA	09.462.157/0001-03	\N	\N	f	f	\N	\N	ATAIDES DA COSTA PASSOS	\N	R LAGUNA, 480, ********, VENEZA, Ipatinga, MG - CEP: 35164250.	\N	\N	\N	\N	\N	\N	\N	\N	\N	Ativa	2026-01-26 17:02:40.693	2026-01-26 17:02:40.693
+2ed5ff3d-928c-47a4-8733-6ed1f685cd72	ATIVE CONSTRUÇÕES LTDA	43.739.578/0001-77	\N	\N	f	f	\N	\N	ATIVE CONSTRUÇÕES LTDA	\N	AV. MILTON CAMPOS, 205, Perpétuo Socorro, Belo Oriente, MG - CEP: 35196000.	\N	\N	\N	\N	\N	ativeconstrucoesatendimento@gmail.com	\N	\N	\N	Ativa	2026-01-26 17:02:40.699	2026-01-26 17:02:40.699
+30fa29d8-5599-4836-a6f6-1f246366103c	BEM ME QUER KIDS	42.423.008/0001-00	\N	\N	f	f	\N	\N	BEM ME QUER COMERCIO DE ROUPAS E ACESSORIOS LTDA	\N	R BARBARA HELIODORA, 352, LETRA A, BOM RETIRO, Ipatinga, MG - CEP: 35160215.	\N	\N	\N	\N	\N	\N	\N	\N	\N	Ativa	2026-01-26 17:02:40.712	2026-01-26 17:02:40.712
+a81d7ef2-340b-4b48-9a39-9d91bf96e0f1	BTS CARNES E BEBIDAS LTDA	48.721.694/0001-82	\N	\N	f	f	\N	\N	BTS CARNES E BEBIDAS LTDA	\N	AV GALILEIA, 263, CANAA, Ipatinga, MG - CEP: 35164165.	\N	\N	\N	\N	\N	newgrill2020@outlook.com	\N	\N	\N	Ativa	2026-01-26 17:02:40.719	2026-01-26 17:02:40.719
+91797f39-2493-49e0-abc8-ac72cc21828f	C R DO NASCIMENTO - DEPOSITO POPULAR	49.278.645/0001-80	\N	\N	f	f	\N	\N	C R DO NASCIMENTO	\N	AV BRASILIA - ATE 1399/1400, 2529, ********, AMARO LANARI, Coronel Fabriciano, MG - CEP: 35171346.	\N	\N	\N	\N	\N	carlosnascimentoloja@gmail.com	\N	\N	\N	Ativa	2026-01-26 17:02:40.734	2026-01-26 17:02:40.734
+c5e61876-fc17-4f76-973f-374c2a343238	CAIRO QUEIROGA ALMEIDA ARAUJO	33.330.471/0001-17	\N	\N	f	f	\N	\N	CAIRO QUEIROGA ALMEIDA ARAUJO	\N	RUA GETULIO VARGAS, 129, CENTRO, Mesquita, MG - CEP: 35116000.	\N	\N	\N	\N	\N	\N	\N	\N	\N	Ativa	2026-01-26 17:02:40.74	2026-01-26 17:02:40.74
+f46f0173-b25e-4169-8ff8-09c29c345b3e	CAMILA CARVALHO HERMOGENES OLIVEIRA	35.633.623/0001-86	\N	\N	f	f	\N	\N	CAMILA CARVALHO HERMOGENES OLIVEIRA	\N	Rua Pica-Pau, 162, Vila Celeste, Ipatinga, MG - CEP: 35162516.	\N	\N	\N	\N	\N	\N	\N	\N	\N	Ativa	2026-01-26 17:02:40.747	2026-01-26 17:02:40.747
+84f17ef4-e087-4b75-8f35-bf972f7112a7	CAMPODONICO EMPREENDIMENTOS LTDA - SMART CELL	28.688.559/0001-75	\N	\N	f	f	\N	\N	CAMPODONICO EMPREENDIMENTOS LTDA	\N	R DIAMANTINA, 64, CENTRO, Ipatinga, MG - CEP: 35160019.	\N	\N	\N	\N	\N	\N	\N	\N	\N	Ativa	2026-01-26 17:02:40.754	2026-01-26 17:02:40.754
+e750f7ef-42aa-4742-a153-ef6340a8b1dd	CARVALHO RIBEIRO COMERCIAL LTDA	64.005.149/0001-46	\N	\N	f	f	\N	\N	CARVALHO RIBEIRO COMERCIAL LTDA	\N	Avenida Pedro Linhares Gomes, 4300, - do km 241,320 ao km 244,500, Industrial, Ipatinga, MG - CEP: 35160291.	\N	\N	\N	\N	\N	\N	\N	\N	\N	Ativa	2026-01-26 17:02:40.76	2026-01-26 17:02:40.76
+af5ac75d-41e8-4f58-9707-385d74d6a7a5	CASA AZUL MATERIAL DE CONSTRUÇÃO LTDA	50.326.372/0001-80	\N	\N	f	f	\N	\N	CASA AZUL MATERIAL DE CONSTRUÇÃO LTDA	\N	R DORCELINO, 474, LOJA A, centro, Naque, MG - CEP: 35117000.	\N	\N	\N	\N	\N	casaazulmaterialdeconstrucao@gmail.com	\N	\N	\N	Ativa	2026-01-26 17:02:40.766	2026-01-26 17:02:40.766
+c2734efd-c7a7-440e-8e84-b953ab9e90f1	433 STYLE MODA MASCULINA LTDA	53.935.925/0001-90	\N	\N	t	f	Contribuinte ICMS	0048221950009	433 STYLE MODA MASCULINA LTDA		AV PINHEIRO, 449, LOJA 03, LIMOEIRO, Timoteo, MG - CEP: 35181402.					\N	\N	\N	\N	\N	Ativa	2026-01-26 17:02:40.509	2026-01-26 18:41:13.835
+860215eb-0d80-4cec-8dc1-77f16aaaed17	ALVES AMORIM UTENSILIOS DOMESTICOS LTDA	55.066.909/0001-34	\N	\N	t	f	Contribuinte ICMS	0048890590084	ALVES AMORIM UTENSILIOS DOMESTICOS LTDA	35160-020	Rua Ouro Preto	139	Centro	Ipatinga	MG	\N	comercial.amorim@gmail.com	\N	\N	\N	Ativa	2026-01-26 17:02:40.665	2026-01-26 18:42:23.653
+7a864c1a-2d86-49cd-9e8c-276dbbb24cf0	ADAIR PAULO GOVEIA	20.821.232/0001-18	\N	\N	t	t	Nao Contribuinte	0024102940014	ADAIR PAULO GOVEIA		RUA CARLOS EDMUNDO LANDAETA, 342, CIDADE NOVA, Santana do Paraiso, MG - CEP: 35179000.					\N	lockmaismg@gmail.com	\N	\N	\N	Ativa	2026-01-26 17:02:40.64	2026-01-26 18:34:27.696
+fae43d3f-f0ba-4b05-b80e-986ebcc87da9	ACLIVE PRODUTOS DE LIMPEZA LTDA	12.456.313/0001-38	\N	\N	t	t	Nao Contribuinte	0016538140033	ACLIVE PRODUTOS DE LIMPEZA LTDA		RUA BARRETOS, 509, PARQUE CARAVELAS, Santana do Paraiso, MG - CEP: 35179000.					\N	VALTAIRSG@HOTMAIL.COM	\N	\N	\N	Ativa	2026-01-26 17:02:40.631	2026-01-26 18:34:25.165
+d1f7ee45-a651-41c3-a745-f8d2a0632129	A B FORNEAS JUNIOR	13.251.559/0001-36	\N	\N	t	f	Contribuinte ICMS	0017334370074	A B FORNEAS JUNIOR		EST CORREGO NOVO A PINGO D AGUA KM 2,5, 01, ZONA RURAL, Corrego Novo, MG - CEP: 35345000.					\N	abforneas@hotmail.com	\N	\N	\N	Ativa	2026-01-26 17:02:40.623	2026-01-26 18:34:26.02
+8570af09-5b13-4686-8ccd-54ff0aada8a3	ANDRADE INDUSTRIA COMERCIO E SERVICOS LTDA	31.000.712/0001-34	\N	\N	t	f			ANDRADE INDUSTRIA COMERCIO E SERVICOS LTDA		R MOGI MIRIM, 253, LOJA A, PARQUE CARAVELAS, Santana do Paraiso, MG - CEP: 35179000.					\N	contato@craeletronica.com.br	\N	\N	\N	Ativa	2026-01-26 17:02:40.68	2026-02-02 20:01:14.798
+9d5ecdff-c9c3-4e21-a142-2220618f6ee6	28.076.489 ALYNE FERREIRA MENDONCA	28.076.489/0001-02	\N	\N	f	f		0032376810094	28.076.489 ALYNE FERREIRA MENDONCA	35179-000		253		Santana do Paraíso	MG	\N	ALYNEAYLA32@GMAIL.COM	\N	\N	\N	Ativa	2026-01-26 17:02:40.672	2026-02-02 19:53:25.144
+3b859bc1-7c4d-42f6-b523-6b5090f46639	BAR E LANCHONETE POINT DA BAIANA	50.257.635/0001-47	\N	\N	t	f			BAR E LANCHONETE POINT DA BAIANA		Rua Passo Fundo, 665, Caravelas, Ipatinga, MG - CEP: 35164279.					\N	\N	\N	\N	\N	Ativa	2026-01-26 17:02:40.705	2026-02-02 19:57:04.475
+34e809bc-e14d-4c57-8659-27aa8d5d2353	CASA DE CARNES ARAUJO & MOREIRA LTDA	36.456.753/0001-53	\N	\N	f	f	\N	\N	CASA DE CARNES ARAUJO & MOREIRA LTDA	\N	R LIDIA FERNANDES, 107, LOJA 2, CENTRO, Naque, MG - CEP: 35117000.	\N	\N	\N	\N	\N	\N	\N	\N	\N	Ativa	2026-01-26 17:02:40.773	2026-01-26 17:02:40.773
+4795045d-0792-4d81-87ac-21cf47b1150b	CASA DE CARNES RAMOS LTDA	21.232.770/0001-30	\N	\N	f	f	\N	\N	CASA DE CARNES RAMOS LTDA	\N	R AMETISTA, 165, ********, IGUACU, Ipatinga, MG - CEP: 35162018.	\N	\N	\N	\N	\N	\N	\N	\N	\N	Ativa	2026-01-26 17:02:40.785	2026-01-26 17:02:40.785
+d6bc8918-8781-4d1c-8a9d-311e36b3ab29	CASA DE CARNES TOP GRILL LTDA	60.332.747/0001-79	\N	\N	f	f	\N	\N	CASA DE CARNES TOP GRILL LTDA	\N	AV SELIM JOSE DE SALES, 1888, BETHANIA, Ipatinga, MG - CEP: 35164542.	\N	\N	\N	\N	\N	\N	\N	\N	\N	Ativa	2026-01-26 17:02:40.791	2026-01-26 17:02:40.791
+5511aff5-3879-4d0b-82f8-a6258e36b254	CASTRO E ALVES LTDA	21.265.228/0001-83	\N	\N	f	f	\N	\N	CASTRO E ALVES LTDA	\N	R RIO GRANDE DO SUL, 315, A, AMARO LANARI, Coronel Fabriciano, MG - CEP: 35171339.	\N	\N	\N	\N	\N	\N	\N	\N	\N	Ativa	2026-01-26 17:02:40.797	2026-01-26 17:02:40.797
+da1c14df-e9f8-4a53-ac04-d03c2a31d819	CELULAR ELETROLIM - CELULAR E COMPANHIA LTDA	35.510.373/0001-97	\N	\N	f	f	\N	\N	CELULAR E COMPANHIA LTDA	\N	R SAO JOAO DEL REI, 43, LOJA 2, CENTRO, Ipatinga, MG - CEP: 35160012.	\N	\N	\N	\N	\N	\N	\N	\N	\N	Ativa	2026-01-26 17:02:40.803	2026-01-26 17:02:40.803
+b3a61b84-90ba-4401-8856-5dc443c65774	CENTRO AUTOMOTIVO RB QUINTELA	23.531.844/0001-64	\N	\N	f	f	\N	\N	CENTRO AUTOMOTIVO R B QUINTELA LTDA	\N	AV CARLOS EDMUNDO LANDAETA, 1660, ********, CIDADE NOVA, Santana do Paraiso, MG - CEP: 35179000.	\N	\N	\N	\N	\N	CENTROAUTOMOTIVORBQUINTELA@GMAIL.COM	\N	\N	\N	Ativa	2026-01-26 17:02:40.809	2026-01-26 17:02:40.809
+c56da90a-3d59-4298-830f-095b853fc66b	CLAUDIA BRAVOS CRESPO BRITO	14.663.735/0001-00	\N	\N	f	f	\N	\N	CLAUDIA BRAVOS CRESPO BRITO	\N	R APUCARANA, 645, CARAVELAS, Ipatinga, MG - CEP: 35164264.	\N	\N	\N	\N	\N	maxbryto@hotmail.com	\N	\N	\N	Ativa	2026-01-26 17:02:40.815	2026-01-26 17:02:40.815
+2a494bd4-367f-4040-8845-8e7848d5d977	CLAUDIA DO CARMO ASSIS	35.094.535/0001-53	\N	\N	f	f	\N	\N	CLAUDIA DO CARMO ASSIS 04507372682	\N	R TOQUIO, 200, LOJA, BETHANIA, Ipatinga, MG - CEP: 35164116.	\N	\N	\N	\N	\N	claudiaassis@yahoo.com.br	\N	\N	\N	Ativa	2026-01-26 17:02:40.822	2026-01-26 17:02:40.822
+0cc6cdfa-27c7-4787-b0f9-ef8fa68edfe0	CN NUNES COMERCIO, INDUSTRIA E ENGENHARIA LTDA	52.353.103/0001-39	\N	\N	f	f	\N	\N	CN NUNES COMERCIO, INDUSTRIA E ENGENHARIA LTDA	\N	Rua Peçanha, 828, Centro, Governador Valadares, MG - CEP: 35010161.	\N	\N	\N	\N	\N	\N	\N	\N	\N	Ativa	2026-01-26 17:02:40.835	2026-01-26 17:02:40.835
+838e8a0d-4717-4e25-a377-6a0dcb69c901	COMERCIAL REIS & TINTI LTDA	12.353.848/0001-83	\N	\N	f	f	\N	\N	COMERCIAL REIS & TINTI LTDA	\N	TRAVESSA PADRE JOÃO GERALDO, 44, CENTRO, Iapu, MG - CEP: 35190000.	\N	\N	\N	\N	\N	julliana.psilva@hotmail.com	\N	\N	\N	Ativa	2026-01-26 17:02:40.841	2026-01-26 17:02:40.841
+62393856-a841-4b3d-b967-218a24058f6b	COMERCIO DE TECIDOS MELO	09.168.938/0001-90	\N	\N	f	f	\N	\N	COMERCIO DE TECIDOS MELO LTDA	\N	R PEDRAS BONITAS, 590, LOJA: 02;, IGUACU, Ipatinga, MG - CEP: 35162000.	\N	\N	\N	\N	\N	MALHARIAARCOIRIS@HOTMAIL.COM	\N	\N	\N	Ativa	2026-01-26 17:02:40.847	2026-01-26 17:02:40.847
+6317237c-79a5-4ba0-abd0-1635643d48f4	COMERCIO E DISTRIBUIDORA STORE.RDR LTDA	59.777.702/0001-29	\N	\N	f	f	\N	\N	COMERCIO E DISTRIBUIDORA STORE.RDR LTDA	\N	RUA PRIMEIRO DE MARÇO, 734, CENTRO, Belo Oriente, MG - CEP: 35195000.	\N	\N	\N	\N	\N	\N	\N	\N	\N	Ativa	2026-01-26 17:02:40.853	2026-01-26 17:02:40.853
+61f4218b-336d-4273-b58a-13ed3b8d3c21	COMERCIO HORTINUTRI LTDA	56.075.870/0001-84	\N	\N	f	f	\N	\N	COMERCIO HORTINUTRI	\N	AV ARRAIAL DAJUDA, 103, Ilha do Rio Doce, Caratinga, MG - CEP: 35317000.	\N	\N	\N	\N	\N	\N	\N	\N	\N	Ativa	2026-01-26 17:02:40.859	2026-01-26 17:02:40.859
+fae8d3a7-2b79-4381-9dcf-74d0cfd4beb6	COMMANDOS ARTIGOS MILITARES EIRELI	30.022.653/0001-32	\N	\N	f	f	\N	\N	COMMANDOS ARTIGOS MILITARES EIRELI	\N	AV BRASIL, 640, ********, IGUACU, Ipatinga, MG - CEP: 35162036.	\N	\N	\N	\N	\N	lojacommandos@hotmail.com	\N	\N	\N	Ativa	2026-01-26 17:02:40.866	2026-01-26 17:02:40.866
+7152e104-a9e2-4928-8424-371e43750849	CORREIA E SILVEIRA CONFECÇÃO LTDA	12.946.121/0002-90	\N	\N	f	f	\N	\N	CORREIA E SILVEIRA CONFECÇÃO LTDA	\N	Avenida Simon Bolivar, 890, Cidade Nobre, Ipatinga, MG - CEP: 35162410.	\N	\N	\N	\N	\N	\N	\N	\N	\N	Ativa	2026-01-26 17:02:40.874	2026-01-26 17:02:40.874
+dfa958e1-c6d0-494d-b4dd-c4e674928b9b	CRIS ACESSORIOS LTDA	63.248.194/0001-69	\N	\N	f	f	\N	\N	CRIS ACESSORIOS LTDA	\N	AV JOSE RODRIGUES DE ALMEIDA, 662, CENTRO, Ipaba, MG - CEP: 35198000.	\N	\N	\N	\N	\N	\N	\N	\N	\N	Ativa	2026-01-26 17:02:40.882	2026-01-26 17:02:40.882
+7023def5-6356-47d1-a151-90598c17aa6c	CRIS CALCADOS	32.412.681/0001-91	\N	\N	f	f	\N	\N	CRIS CALCADOS LTDA	\N	AV JOSE RODRIGUES DE ALMEIDA, 707, ********, CENTRO, Ipaba, MG - CEP: 35198000.	\N	\N	\N	\N	\N	cris_galvao.f@hotmail.com	\N	\N	\N	Ativa	2026-01-26 17:02:40.889	2026-01-26 17:02:40.889
+5e02caaa-93e8-41fd-8f0d-b4048f4de471	CURRENT FASHION ARTIGOS E CONFECCOES LTDA - FILIAL	42.614.326/0002-30	\N	\N	f	f	\N	\N	CURRENT FASHION ARTIGOS E CONFECCOES LTDA	\N	Rua Carlos Lindenberg, 06, Jardim Camburi, Vitoria, ES - CEP: 29092110.	\N	\N	\N	\N	\N	ivonisabatini.comfortwear@gmail.com	\N	\N	\N	Ativa	2026-01-26 17:02:40.895	2026-01-26 17:02:40.895
+296c008d-a76d-446a-8abe-fbeca5ea44ad	CURRENT FASHION ARTIGOS E CONFECCOES LTDA - MATRIZ	42.614.326/0001-59	\N	\N	f	f	\N	\N	CURRENT FASHION ARTIGOS E CONFECCOES LTDA	\N	R ESTACIO DE SA, 55, LOJA 02, PARQUE RESIDENCIAL LARANJEIRAS, Serra, ES - CEP: 29165450.	\N	\N	\N	\N	\N	\N	\N	\N	\N	Ativa	2026-01-26 17:02:40.902	2026-01-26 17:02:40.902
+29045385-c175-4595-acce-29689efbdc40	D. A. M. FREITAS DE LIMA - MATRIZ	50.055.104/0001-71	\N	\N	f	f	\N	\N	D. A. M. FREITAS DE LIMA	\N	AV JOSE BARCELOS, 204, BETHANIA, Ipatinga, MG - CEP: 35164069.	\N	\N	\N	\N	\N	\N	\N	\N	\N	Ativa	2026-01-26 17:02:40.908	2026-01-26 17:02:40.908
+40d603f9-6963-4c80-b421-fa567f8ae74d	DEIVISSON ALVES PERPETUO - OUROMAX	28.671.491/0001-11	\N	\N	f	f	\N	\N	DEIVISSON ALVES PERPETUO DA SILVA 08736053651	\N	R SAO JOAO DEL REI, 43, LOJA 01, CENTRO, Ipatinga, MG - CEP: 35160012.	\N	\N	\N	\N	\N	\N	\N	\N	\N	Ativa	2026-01-26 17:02:40.914	2026-01-26 17:02:40.914
+aaca5339-d96f-442d-83a0-a1757b8cdc16	DEPOSITO NOGUEIRA - DEUZIL	03.655.273/0001-62	\N	\N	f	f	\N	\N	DEUZIL LOURENCO LOPES FILHO	\N	AV ESPERANCA, 350, ESPERANCA, Ipatinga, MG - CEP: 35162257.	\N	\N	\N	\N	\N	depositonogueira@hotmail.com	\N	\N	\N	Ativa	2026-01-26 17:02:40.92	2026-01-26 17:02:40.92
+cabffadb-358a-4230-a0c7-576dc1644715	DH CELL LTDA	28.894.648/0001-78	\N	\N	f	f	\N	\N	DH CELL LTDA	\N	Avenida Brasil, 205, C LOJA 26, Iguaçu, Ipatinga, MG - CEP: 35162082.	\N	\N	\N	\N	\N	dhcell@dhcell.com.br	\N	\N	\N	Ativa	2026-01-26 17:02:40.926	2026-01-26 17:02:40.926
+f96f1692-9843-476e-8d2f-dc6811b16fad	DIDI AÇOUGUE & SUPERMERCADO	07.318.320/0001-33	\N	\N	f	f	\N	\N	DIDI ACOUGUE & SUPERMERCADO LTDA	\N	R LIDIA PINTO FERNANDES, 93, CENTRO, Naque, MG - CEP: 35157000.	\N	\N	\N	\N	\N	soaresevalda@hotmail.com	\N	\N	\N	Ativa	2026-01-26 17:02:40.935	2026-01-26 17:02:40.935
+3ffe20f9-7d17-451a-aa14-a66c1acb0643	DISTRIBUIDORA DE ALIMENTOS LP	32.703.998/0001-87	\N	\N	f	f	\N	\N	DISTRIBUIDORA DE ALIMENTOS LP - EIRELI	\N	AV FLORES, 842, BOM JARDIM, Ipatinga, MG - CEP: 35162263.	\N	\N	\N	\N	\N	\N	\N	\N	\N	Ativa	2026-01-26 17:02:40.942	2026-01-26 17:02:40.942
+b2c3a335-6506-4da6-99ff-df52a9aed6cf	DOCERIA E CIA	54.846.139/0001-80	\N	\N	f	f	\N	\N	DOCERIA E CIA LTDA	\N	AV JOSE CANDIDO DE MEIRE, 674, LOJA 2, BETHANIA, Ipatinga, MG - CEP: 35164068.	\N	\N	\N	\N	\N	\N	\N	\N	\N	Ativa	2026-01-26 17:02:40.95	2026-01-26 17:02:40.95
+120c2401-1c5d-4445-ae18-fb20e0fb4f66	DUDA SHOP STORE COMERCIO ELETROELETRONICOS LTDA	05.934.170/0001-67	\N	\N	f	f	\N	\N	DUDA SHOP STORE COMERCIO DE ELETROELETRONICOS LTDA	\N	Avenida Geraldo Inácio, 775, - até 1383/1384, Melo Viana, Coronel Fabriciano, MG - CEP: 35170150.	\N	\N	\N	\N	\N	oliveiraecarvalho1@gmail.com	\N	\N	\N	Ativa	2026-01-26 17:02:40.957	2026-01-26 17:02:40.957
+60609542-d022-47b1-8703-9058cf9dc933	DUECILENE PEREIRA DA SILVA	33.240.967/0001-08	\N	\N	f	f	\N	\N	DUECILENE PEREIRA DA SILVA	\N	R SAO SALVADOR, 40, DIST NAQUE NANUQUE, Acucena, MG - CEP: 35147600.	\N	\N	\N	\N	\N	ducilenepereira4537@gmail.com	\N	\N	\N	Ativa	2026-01-26 17:02:40.963	2026-01-26 17:02:40.963
+233bb22e-e9fc-45b6-9b31-f94e01ae74a1	E A LUNA	12.310.573/0001-09	\N	\N	f	f	\N	\N	E A LUNA	\N	AV LONDRINA, 935, VENEZA, Ipatinga, MG - CEP: 35164291.	\N	\N	\N	\N	\N	JCPNEUS2013@GMAIL.COM	\N	\N	\N	Ativa	2026-01-26 17:02:40.97	2026-01-26 17:02:40.97
+8e4f57c8-350d-4de0-954d-0dfd9c2aea07	E B ATACADISTA LTDA	35.353.828/0001-08	\N	\N	f	f	\N	\N	E B ATACADISTA LTDA	\N	RUA CARLOS CHAGAS, 140, CIDADE NOVA, Santana do Paraiso, MG - CEP: 35179000.	\N	\N	\N	\N	\N	\N	\N	\N	\N	Ativa	2026-01-26 17:02:40.981	2026-01-26 17:02:40.981
+dcebeae5-cce0-48ea-9b97-bf29783f8c3f	E. F. ASSIS ALTERA LTDA	34.216.964/0001-93	\N	\N	f	f	\N	\N	E. F. ASSIS ALTERA LTDA	\N	AV BRASIL, 215, CAVA GRANDE, Marlieria, MG - CEP: 35185000.	\N	\N	\N	\N	\N	\N	\N	\N	\N	Ativa	2026-01-26 17:02:40.991	2026-01-26 17:02:40.991
+f76cc03c-3a81-48af-9571-af3e31769c19	EDS - FILIAL	20.549.897/0002-03	\N	\N	f	f	\N	\N	EDS MATERIAL DE CONSTRUCAO LTDA	\N	AV ALBERTO GIOVANNINI, 94, BETHANIA, Ipatinga, MG - CEP: 35164538.	\N	\N	\N	\N	\N	\N	\N	\N	\N	Ativa	2026-01-26 17:02:40.999	2026-01-26 17:02:40.999
+541d8cb3-4799-46da-8999-57f2582afed6	EDS - MATRIZ	20.549.897/0001-14	\N	\N	f	f	\N	\N	EDS MATERIAL DE CONSTRUCAO LTDA	\N	R ARGEL, 73, LOJA 2, BETHANIA, Ipatinga, MG - CEP: 35164021.	\N	\N	\N	\N	\N	\N	\N	\N	\N	Ativa	2026-01-26 17:02:41.007	2026-01-26 17:02:41.007
+d91300a4-2f4d-4633-9514-607ea5d01572	EJD FERRAGENS & FERRAMENTAS	15.108.242/0001-70	\N	\N	f	f	\N	\N	EJD FERRAGENS & FERRAMENTAS LTDA	\N	AV DO CONTORNO, 1928, ********, CENTRO, Ipaba, MG - CEP: 35198000.	\N	\N	\N	\N	\N	\N	\N	\N	\N	Ativa	2026-01-26 17:02:41.014	2026-01-26 17:02:41.014
+06d902ab-d158-44aa-9070-a9b155d3d691	EMPORIO DA PIZZA LTDA	11.401.590/0001-80	\N	\N	f	f	\N	\N	EMPORIO DA PIZZA LTDA	\N	R CASTRO ALVES, 195, ********, CIDADE NOBRE, Ipatinga, MG - CEP: 35162360.	\N	\N	\N	\N	\N	renatohegg@yahoo.com.br	\N	\N	\N	Ativa	2026-01-26 17:02:41.021	2026-01-26 17:02:41.021
+b6f004f9-cbf6-4033-8ea8-dd092c6828e6	ERONILSON PONTES FLORIANO	60.805.805/0001-34	\N	\N	f	f	\N	\N	ERONILSON PONTES FLORIANO	\N	R ANCHIETA, 81, CASA, NOVO HORIZONTE, Ipaba, MG - CEP: 35198000.	\N	\N	\N	\N	\N	\N	\N	\N	\N	Ativa	2026-01-26 17:02:41.027	2026-01-26 17:02:41.027
+cea4db3f-3dec-4390-8874-10aafd10e1c5	FABRIZIO GUALBERTO	05.108.323/0001-17	\N	\N	f	f	\N	\N	FABRIZIO GUALBERTO SILVA	\N	AV VINTE E OITO DE ABRIL, 127, ********, CENTRO, Ipatinga, MG - CEP: 35160004.	\N	\N	\N	\N	\N	fabriziomultimarcas@hotmail.com	\N	\N	\N	Ativa	2026-01-26 17:02:41.035	2026-01-26 17:02:41.035
+69c4de59-5074-4e4c-8dce-4b6b5687c494	FERREIRA & PEREIRA PANIFICAÇÃO E CONFEITARIA LTDA	47.130.461/0001-42	\N	\N	f	f	\N	\N	FERREIRA & PEREIRA PANIFICAÇÃO E CONFEITARIA LTDA	\N	Rua Dom Pedro II, 361, Cidade Nobre, Ipatinga, MG - CEP: 35162399.	\N	\N	\N	\N	\N	estacaodupaocn@gmail.com	\N	\N	\N	Ativa	2026-01-26 17:02:41.041	2026-01-26 17:02:41.041
+d4a35754-f72c-45aa-bc03-b065b41166b2	FLÁVIA CRISTINA FERREIRA DE OLIVEIRA	51.057.934/0001-09	\N	\N	f	f	\N	\N	FLÁVIA CRISTINA FERREIRA DE OLIVEIRA	\N	Avenida José Júlio da Costa, 1582, Iguaçu, Ipatinga, MG - CEP: 35162761.	\N	\N	\N	\N	\N	brinquedotecaadventure@gmail.com	\N	\N	\N	Ativa	2026-01-26 17:02:41.047	2026-01-26 17:02:41.047
+910778f7-b5f3-496f-9db9-bccb75dfb51f	FRANCISCA MARIA DOS SANTOS PEREIRA	26.991.302/0001-62	\N	\N	f	f	\N	\N	FRANCISCA MARIA DOS SANTOS PEREIRA	\N	AV MONTEIRO LOBATO, 779, CIDADE NOBRE, Ipatinga, MG - CEP: 35162394.	\N	\N	\N	\N	\N	FRANBELEZARENOVADA98@GMAIL.COM	\N	\N	\N	Ativa	2026-01-26 17:02:41.053	2026-01-26 17:02:41.053
+88bb1633-22fc-4575-9766-553c5d8f1d61	FRANCISCO LAGE RAMOS 54099862615 -  CHIQUINHO FEIRA	30.987.343/0001-52	\N	\N	f	f	\N	\N	FRANCISCO LAGE RAMOS 54099862615	\N	Rua Macabeus, 1213, Canaã, Ipatinga, MG - CEP: 35164183.	\N	\N	\N	\N	\N	aureamorae57@gmail.com	\N	\N	\N	Ativa	2026-01-26 17:02:41.06	2026-01-26 17:02:41.06
+eaf01c6a-eb8f-4c44-b59f-52bb34689c1e	G S XAVIER	34.237.804/0001-20	\N	\N	f	f	\N	\N	G S XAVIER ARTIGOS INFANTIS	\N	AV VINTE E OITO DE ABRIL, 620, LOJA A, CENTRO, Ipatinga, MG - CEP: 35160004.	\N	\N	\N	\N	\N	babystoreipatinga@gmail.com	\N	\N	\N	Ativa	2026-01-26 17:02:41.066	2026-01-26 17:02:41.066
+a6a3c0c9-8c93-4377-bb4f-41cb40129183	G. DE SOUZA SANTOS	24.848.709/0001-00	\N	\N	f	f	\N	\N	G. DE SOUZA SANTOS	\N	AV JOSE RODRIGUES DE ALMEIDA, 817, ********, CENTRO, Ipaba, MG - CEP: 35198000.	\N	\N	\N	\N	\N	GERALDO.SANTOSJAIR@GMAIL.COM	\N	\N	\N	Ativa	2026-01-26 17:02:41.073	2026-01-26 17:02:41.073
+7e01d657-b71a-4a83-acb0-c0f3ee064f5d	GENESIO FERNANDES DE OLIVEIRA	19.599.028/0001-15	\N	\N	f	f	\N	\N	GENESIO FERNANDES DE OLIVEIRA 08361338624	\N	AV MANOEL MACHADO FRANCO, 818, LOJA 01, CENTRO, Ipaba, MG - CEP: 35198000.	\N	\N	\N	\N	\N	\N	\N	\N	\N	Ativa	2026-01-26 17:02:41.079	2026-01-26 17:02:41.079
+8bf291c5-682c-46f4-b196-29004ae75d60	GERALDO M MARTINS	10.486.586/0001-08	\N	\N	f	f	\N	\N	GERALDO M MARTINS	\N	RUA PIQUIARANA, 217, JARDIM VITORIA, Santana do Paraiso, MG - CEP: 35179000.	\N	\N	\N	\N	\N	gmartins028@gmail.com	\N	\N	\N	Ativa	2026-01-26 17:02:41.085	2026-01-26 17:02:41.085
+dcc15386-af55-4b18-9319-28e0ac85cd61	GIGACELL LTDA	60.941.738/0001-85	\N	\N	f	f	\N	\N	GIGACELL LTDA	\N	AV VINTE E OITO DE ABRIL, 109, ********, CENTRO, Ipatinga, MG - CEP: 35160004.	\N	\N	\N	\N	\N	\N	\N	\N	\N	Ativa	2026-01-26 17:02:41.093	2026-01-26 17:02:41.093
+795cadc3-ca9b-4427-92bc-af59f642f35b	GIOVANE ERMELINDO FERREIRA	02.661.300/0001-47	\N	\N	f	f	\N	\N	GIOVANE ERMELINDO FERREIRA	\N	Avenida Flores, 544, - até 1045/1046, Bom Jardim, Ipatinga, MG - CEP: 35162263.	\N	\N	\N	\N	\N	\N	\N	\N	\N	Ativa	2026-01-26 17:02:41.108	2026-01-26 17:02:41.108
+38373a6f-3ea9-4646-93eb-128ac251c2ac	GIOVANE ERMELINDO FERREIRA - DEPOSITO SAO JOSE - FILIAL	02.661.300/0002-28	\N	\N	f	f	\N	\N	GIOVANE ERMELINDO FERREIRA - CPF 87300672604	\N	AV ORQUIDEA, 633, ********, BOM JARDIM, Ipatinga, MG - CEP: 35162290.	\N	\N	\N	\N	\N	\N	\N	\N	\N	Ativa	2026-01-26 17:02:41.118	2026-01-26 17:02:41.118
+923562f3-489d-4e46-914b-9992ecb09681	GOMES E NUNES PANIFICAÇÃO LTDA	62.275.860/0001-95	\N	\N	f	f	\N	\N	GOMES E NUNES PANIFICAÇÃO LTDA	\N	Avenida Macapá, 175, Veneza, Ipatinga, MG - CEP: 35164253.	\N	\N	\N	\N	\N	\N	\N	\N	\N	Ativa	2026-01-26 17:02:41.128	2026-01-26 17:02:41.128
+2ba9558b-8d46-45c4-b024-9923dc3dcc41	GONZALES VARIEDADES EIRELI - DANY VARIEDADES	08.766.513/0001-10	\N	\N	f	f	\N	\N	GONZALES VARIEDADES EIRELI	\N	R JASPE, 20, ********, IGUACU, Ipatinga, MG - CEP: 35162077.	\N	\N	\N	\N	\N	grazyvariedades@hotmail.com	\N	\N	\N	Ativa	2026-01-26 17:02:41.142	2026-01-26 17:02:41.142
+4f425ba2-9bed-4759-859b-371000d1bfdb	GRIMALDO MARTINS SAMPAIO	03.213.390/0001-76	\N	\N	f	f	\N	\N	GRIMALDO MARTINS SAMPAIO	\N	AV JOSE RODRIGUES DE ALMEIDA, 368, ********, CENTRO, Ipaba, MG - CEP: 35198000.	\N	\N	\N	\N	\N	toledoesampaio2011@gmail.com	\N	\N	\N	Ativa	2026-01-26 17:02:41.152	2026-01-26 17:02:41.152
+834a15e2-eae5-416d-bae1-8304206b71cd	GRP PINTO -  LOJA MIX TIMOTEO	27.008.114/0001-34	\N	\N	f	f	\N	\N	GRP PINTO	\N	AL TRINTA E UM DE OUTUBRO, 182, LOJA 02, CENTRO, Timoteo, MG - CEP: 35180014.	\N	\N	\N	\N	\N	guilherminaribeiropereira@gmail.com	\N	\N	\N	Ativa	2026-01-26 17:02:41.159	2026-01-26 17:02:41.159
+9ffdb4e9-bec1-4d0b-a468-c15449f2d5ca	HORTIFRUT SOARES BARBOSA II LTDA	58.128.855/0001-82	\N	\N	f	f	\N	\N	HORTIFRUT SOARES BARBOSA II LTDA	\N	AV PIQUIARABA, 229, ********, JARDIM VITORIA, Santana do Paraiso, MG - CEP: 35179000.	\N	\N	\N	\N	\N	BRUNNOSOARES21@HOTMAIL.COM	\N	\N	\N	Ativa	2026-01-26 17:02:41.168	2026-01-26 17:02:41.168
+dd9d275f-45e9-4c21-8ced-0a39b34730e0	I M DE PAULA SILVA	17.692.560/0001-57	\N	\N	f	f	\N	\N	I M DE PAULA SILVA	\N	RUA ASTOLFO MARTINS VIEIRA, 189, CENTRO, Iapu, MG - CEP: 35190000.	\N	\N	\N	\N	\N	MECANICARONALDO@HOTMAIL.COM	\N	\N	\N	Ativa	2026-01-26 17:02:41.177	2026-01-26 17:02:41.177
+39be4bb0-3064-48d3-b1f2-5ac15173c0c8	IDELMAR PRESENTES E AVIAMENTOS	03.510.899/0001-80	\N	\N	f	f	\N	\N	IDELMAR ELIAS DE ARAUJO	\N	AV FERNANDO DE NORONHA, 961, ********, BOM RETIRO, Ipatinga, MG - CEP: 35160350.	\N	\N	\N	\N	\N	\N	\N	\N	\N	Ativa	2026-01-26 17:02:41.186	2026-01-26 17:02:41.186
+d02967da-c09c-4b41-8ef3-609d5e5d1df6	INDUSTRIA MATZE NAZARE LTDA	53.182.636/0001-68	\N	\N	f	f	\N	\N	INDUSTRIA MATZE NAZARE LTDA	\N	Avenida Carlos Chagas, 674, SALA 101, Cidade Nobre, Ipatinga, MG - CEP: 35162359.	\N	\N	\N	\N	\N	rhcarneecia@gmail.com	\N	\N	\N	Ativa	2026-01-26 17:02:41.194	2026-01-26 17:02:41.194
+6e22d838-0337-40fd-a890-cd53ef8062d3	IPA DIREÇÕES HIDRÁULICAS	51.370.797/0001-50	\N	\N	f	f	\N	\N	IPA HIDRÁULICAS	\N	Rua Emanuel, 53, Canaã, Ipatinga, MG - CEP: 35164158.	\N	\N	\N	\N	\N	ipadirecoeshidraulicas@outlook.com	\N	\N	\N	Ativa	2026-01-26 17:02:41.202	2026-01-26 17:02:41.202
+d1e33660-c524-49c2-9bf7-715f1caf3231	J & A AUTO MECANICA LTDA	32.553.796/0001-04	\N	\N	f	f	\N	\N	J & A AUTO MECANICA LTDA	\N	AV GALILEIA, 857, CANAA, Ipatinga, MG - CEP: 35164165.	\N	\N	\N	\N	\N	\N	\N	\N	\N	Ativa	2026-01-26 17:02:41.21	2026-01-26 17:02:41.21
+779a36d7-80aa-4823-a840-76fe51224098	J B DE SOUSA	26.989.265/0001-58	\N	\N	f	f	\N	\N	J B DE SOUSA	\N	R GRADENOR DE MELO, 85, ********, CENTRO, Bugre, MG - CEP: 35193000.	\N	\N	\N	\N	\N	\N	\N	\N	\N	Ativa	2026-01-26 17:02:41.218	2026-01-26 17:02:41.218
+6c346b67-a1c8-4395-932b-f87f1f56a47c	J F ATACAREJO IBATIBA	14.896.554/0004-76	\N	\N	f	f	\N	\N	J F ATACAREJO LTDA	\N	CRG CORREGO DA CAMBRAIA, SN, ZONA RURAL, Ibatiba, ES - CEP: 29395000.	\N	\N	\N	\N	\N	\N	\N	\N	\N	Ativa	2026-01-26 17:02:41.224	2026-01-26 17:02:41.224
+fe2c29ad-28f0-429d-abbb-b7116cc31dd2	J F ATACAREJO LTDA	14.896.554/0001-23	\N	\N	f	f	\N	\N	J F ATACAREJO LTDA	\N	RUA DIADEMA, 438, PARQUE CARAVELAS, Santana do Paraiso, MG - CEP: 35179000.	\N	\N	\N	\N	\N	glauciasoaress@hotmail.com	\N	\N	\N	Ativa	2026-01-26 17:02:41.23	2026-01-26 17:02:41.23
+567fbdb2-1bfd-42cf-a89c-179cbae2d24c	J. F. S. DE QUEIROZ ALIMENTOS - SABOR SUPREMO	24.005.585/0001-09	\N	\N	f	f	\N	\N	J. F. S. DE QUEIROZ ALIMENTOS	\N	AV BRASIL, 450, LOJA C, IGUACU, Ipatinga, MG - CEP: 35162036.	\N	\N	\N	\N	\N	FELIPE-01QUEIROZ@HOTMAIL.COM	\N	\N	\N	Ativa	2026-01-26 17:02:41.236	2026-01-26 17:02:41.236
+e36faab9-ef47-427f-8673-a54b67928360	JEAN FAUSTINO SANTOS - PESQUE E PAGUE GERALDO	28.520.243/0001-70	\N	\N	f	f	\N	\N	JEAN FAUSTINO SANTOS 08843776606	\N	1A R fazenda sucupira, 0, INDUSTRIAL, Santana do Paraiso, MG - CEP: 35179000.	\N	\N	\N	\N	\N	\N	\N	\N	\N	Ativa	2026-01-26 17:02:41.243	2026-01-26 17:02:41.243
+1787dab0-8353-4f9c-abc5-da80af200e76	JOSE CELIO MAGALHAES LOURES	66.203.506/0001-06	\N	\N	f	f	\N	\N	JOSE CELIO MAGALHAES LOURES	\N	Rua Poços de Caldas, 68, Centro, Ipatinga, MG - CEP: 35160033.	\N	\N	\N	\N	\N	casadaespuma@yahoo.com.br	\N	\N	\N	Ativa	2026-01-26 17:02:41.251	2026-01-26 17:02:41.251
+1e4b8918-e3e2-424e-97f7-83da3a629602	JOSE LEANDRO NEVES BARROS 07568341631	17.221.234/0001-61	\N	\N	f	f	\N	\N	JOSE LEANDRO NEVES BARROS 07568341631	\N	Avenida Monteiro Lobato, 498, Cidade Nobre, Ipatinga, MG - CEP: 35162394.	\N	\N	\N	\N	\N	renatabrleite@hotmail.com	\N	\N	\N	Ativa	2026-01-26 17:02:41.258	2026-01-26 17:02:41.258
+e8df3d38-252d-41bb-a35d-75e3948b98d9	JULIA'S BAKERY PANIFICACAO E CONFEITARIA LTDA	33.630.012/0001-59	\N	\N	f	f	\N	\N	JULIA'S BAKERY PANIFICACAO E CONFEITARIA LTDA	\N	AV LONDRINA, 995, LOJA A, VENEZA, Ipatinga, MG - CEP: 35164291.	\N	\N	\N	\N	\N	\N	\N	\N	\N	Ativa	2026-01-26 17:02:41.265	2026-01-26 17:02:41.265
+929092b0-a62b-4106-9377-0eacbe6b0b39	KENYA BARROS DOS SANTOS	48.228.520/0001-82	\N	\N	f	f	\N	\N	KENYA BARROS DOS SANTOS	\N	R DORCELINO, 32, NAQUE, Naque, MG - CEP: 35117000.	\N	\N	\N	\N	\N	\N	\N	\N	\N	Ativa	2026-01-26 17:02:41.274	2026-01-26 17:02:41.274
+a08031d6-6028-406e-9fe1-241878a27e69	KR LOVE BAKERY	41.338.707/0001-90	\N	\N	f	f	\N	\N	KR LOVE BAKERY LTDA	\N	AV CARLOS CHAGAS, 540, LOJA 3, CIDADE NOBRE, Ipatinga, MG - CEP: 35162359.	\N	\N	\N	\N	\N	\N	\N	\N	\N	Ativa	2026-01-26 17:02:41.283	2026-01-26 17:02:41.283
+383bc462-993c-4ef3-ba9c-7e912a57baa9	LALOAN AUTO ACESSORIOS LTDA	02.904.896/0001-69	\N	\N	f	f	\N	\N	LALOAN AUTO ACESSORIOS LTDA	\N	Rua Serra do Mar, 590, Jardim Panorama, Ipatinga, MG - CEP: 35164238.	\N	\N	\N	\N	\N	\N	\N	\N	\N	Ativa	2026-01-26 17:02:41.293	2026-01-26 17:02:41.293
+170cc5ff-005c-4545-9496-a66eb3b95aaf	LANCHONETE BALANÇA	41.918.517/0001-41	\N	\N	f	f	\N	\N	LANCHONETE BALANCA MAS NAO CAI LTDA	\N	AV MACAPA, 335, LOJA 06, VENEZA, Ipatinga, MG - CEP: 35164253.	\N	\N	\N	\N	\N	\N	\N	\N	\N	Ativa	2026-01-26 17:02:41.301	2026-01-26 17:02:41.301
+618caab6-071b-484e-9bb0-61d34df1f73c	LEVI LTDA	33.347.601/0001-24	\N	\N	f	f	\N	\N	LEVI LTDA	\N	R NOVA YORQUE, 132, BETHANIA, Ipatinga, MG - CEP: 35164093.	\N	\N	\N	\N	\N	\N	\N	\N	\N	Ativa	2026-01-26 17:02:41.309	2026-01-26 17:02:41.309
+31c635d8-1dd5-4415-90fc-0d1a7d263ac6	LISBOA AUTO PECAS LTDA	50.669.771/0001-44	\N	\N	f	f	\N	\N	LISBOA AUTO PECAS LTDA	\N	AV JUSCELINO KUBITSCHEK, 890, JARDIM PANORAMA, Ipatinga, MG - CEP: 35164245.	\N	\N	\N	\N	\N	\N	\N	\N	\N	Ativa	2026-01-26 17:02:41.318	2026-01-26 17:02:41.318
+7cd79f6d-c8b2-4345-b778-2cdf99735c06	LIVRARIA ELOS	22.567.994/0001-65	\N	\N	f	f	\N	\N	LIVRARIA ELOS LTDA	\N	R DIAMANTINA, 110, ********, CENTRO, Ipatinga, MG - CEP: 35160019.	\N	\N	\N	\N	\N	livrariaelos@yahoo.com.br	\N	\N	\N	Ativa	2026-01-26 17:02:41.327	2026-01-26 17:02:41.327
+b8daf8f7-5acc-47ff-a6ab-d27a087eadf6	LM INACIO COMERCIO LTDA	39.796.905/0001-55	\N	\N	f	f	\N	\N	LM INACIO COMERCIO LTDA	\N	Rua Maria Antonieta Silveira, 189, Vila Celeste, Ipatinga, MG - CEP: 35162511.	\N	\N	\N	\N	\N	\N	\N	\N	\N	Ativa	2026-01-26 17:02:41.337	2026-01-26 17:02:41.337
+a9d4b569-302f-4e0b-b30b-d84a72dc706a	LOJAS ALENCAR COMERCIO DE COLCHOES	37.629.175/0001-72	\N	\N	f	f	\N	\N	LOJAS ALENCAR COMERCIO DE COLCHOES LTDA	\N	AV MACAPA, 305, VENEZA, Ipatinga, MG - CEP: 35164253.	\N	\N	\N	\N	\N	\N	\N	\N	\N	Ativa	2026-01-26 17:02:41.347	2026-01-26 17:02:41.347
+671e46bc-2d81-424c-8651-cd2a9fda4beb	LOURIVAL TEIXEIRA DE OLIVEIRA LTDA	11.086.614/0001-54	\N	\N	f	f	\N	\N	LOURIVAL TEIXEIRA DE OLIVEIRA LTDA	\N	AV FLORES, 1168, ********, BOM JARDIM, Ipatinga, MG - CEP: 35162264.	\N	\N	\N	\N	\N	lourivalegisa@gmail.com	\N	\N	\N	Ativa	2026-01-26 17:02:41.357	2026-01-26 17:02:41.357
+e6bf479b-b916-4122-a240-eb050d41a575	LSJ CONSTRUCAO E PAVIMENTACAO	46.378.404/0001-14	\N	\N	f	f	\N	\N	LSJ CONSTRUCAO E PAVIMENTACAO LTDA	\N	AV VINTE E OITO DE ABRIL, 465, LOJA 3, CENTRO, Ipatinga, MG - CEP: 35160004.	\N	\N	\N	\N	\N	\N	\N	\N	\N	Ativa	2026-01-26 17:02:41.366	2026-01-26 17:02:41.366
+44d95480-9530-494e-b686-460db9d84d21	LUCAS GOMES MARTINS	090.137.756-24	\N	\N	f	f	\N	\N	\N	\N	Rua Dilermano Reis, 325, Ideal, Ipatinga, MG - CEP: 35162173.	\N	\N	\N	\N	\N	\N	\N	\N	\N	Ativa	2026-01-26 17:02:41.375	2026-01-26 17:02:41.375
+328ceb48-3388-48d7-afa9-9c3427617597	M J SERRA	34.251.315/0001-23	\N	\N	f	f	\N	\N	M J SERRA	\N	Rua Jacarandá, 628, Horto, Ipatinga, MG - CEP: 35160304.	\N	\N	\N	\N	\N	\N	\N	\N	\N	Ativa	2026-01-26 17:02:41.384	2026-01-26 17:02:41.384
+8c4cfaa1-7ef2-4453-87d4-3785f8a29bda	MARCOS H. R. AMARAL	20.917.858/0001-22	\N	\N	f	f	\N	\N	MARCOS H. R. AMARAL	\N	R LORENA, 95, CARAVELAS, Ipatinga, MG - CEP: 35164268.	\N	\N	\N	\N	\N	\N	\N	\N	\N	Ativa	2026-01-26 17:02:41.393	2026-01-26 17:02:41.393
+f68ebe65-d8a6-4b7d-a71e-18b77dffa7aa	MARIA FLOR LTDA	46.469.792/0001-49	\N	\N	f	f	\N	\N	MARIA FLOR LTDA	\N	Avenida João Valentim Pascoal, 132, LOJA B, Centro, Ipatinga, MG - CEP: 35160002.	\N	\N	\N	\N	\N	eniapenna@hotmail.com	\N	\N	\N	Ativa	2026-01-26 17:02:41.402	2026-01-26 17:02:41.402
+a03b518b-b5e5-4194-bbc5-912da28d132f	MARIA GORETH DE OLIVEIRA SILVA - BAKANAS BAR - MEI	15.045.317/0001-11	\N	\N	f	f	\N	\N	MARIA GORETH DE OLIVEIRA SILVA 04404885679	\N	AV SELIM JOSE DE SALES, 2901, ********, BETHANIA, Ipatinga, MG - CEP: 35164544.	\N	\N	\N	\N	\N	\N	\N	\N	\N	Ativa	2026-01-26 17:02:41.412	2026-01-26 17:02:41.412
+28cad7bd-8c9c-469f-bc0e-6cdb7af48d19	MARIELE DE SOUZA MARTINS	53.426.002/0001-03	\N	\N	f	f	\N	\N	MARIELE DE SOUZA MARTINS	\N	RUA CONSTATINO, 419, CENTRO, Iapu, MG - CEP: 35190000.	\N	\N	\N	\N	\N	marielesouza2015@gmail.com	\N	\N	\N	Ativa	2026-01-26 17:02:41.422	2026-01-26 17:02:41.422
+3c8e23cf-0f65-48d3-aedd-24e8bef3b636	MARTINS SERVIÇOS MECANICOS LTDA	28.279.382/0001-53	\N	\N	f	f	\N	\N	MARTINS SERVIÇOS MECANICOS LTDA	\N	AV UM, 227, SALA B, PARQUE CARAVELAS, Santana do Paraiso, MG - CEP: 35179000.	\N	\N	\N	\N	\N	oficinamazinho@gmail.com	\N	\N	\N	Ativa	2026-01-26 17:02:41.433	2026-01-26 17:02:41.433
+bbf384fd-833c-44dd-87d2-7717c9d7ca2d	MATERIAL DE CONSTRUÇÃO FALCÃO LTDA	04.514.950/0001-95	\N	\N	f	f	\N	\N	MATERIAL DE CONSTRUCAO FALCAO LTDA	\N	R UBERLANDIA, 160, LJ-01, CENTRO, Ipatinga, MG - CEP: 35160024.	\N	\N	\N	\N	\N	\N	\N	\N	\N	Ativa	2026-01-26 17:02:41.443	2026-01-26 17:02:41.443
+13bfaa4b-77c1-4b59-9601-2a8e8c5f13a8	MENDES FABRICACAO E DISTRIBUICAO DE COSMETICOS LTDA - BIO AMAZON COSMETICOS	03.303.439/0001-81	\N	\N	f	f	\N	\N	MENDES FABRICACAO E DISTRIBUICAO DE COSMETICOS LTDA	\N	R RUBENS SIQUEIRA MAIA, 1545, CENTRO, Coronel Fabriciano, MG - CEP: 35170460.	\N	\N	\N	\N	\N	biovitcosmeticos@hotmail.com	\N	\N	\N	Ativa	2026-01-26 17:02:41.452	2026-01-26 17:02:41.452
+42378c87-cc80-42b9-9f93-5b5c923dd98e	MERAKI ART	26.824.408/0001-71	\N	\N	f	f	\N	\N	MERAKI ART ORNAMENTACOES LTDA	\N	AV SIMON BOLIVAR, 899, CIDADE NOBRE, Ipatinga, MG - CEP: 35162410.	\N	\N	\N	\N	\N	contatomerakiart@yahoo.com	\N	\N	\N	Ativa	2026-01-26 17:02:41.461	2026-01-26 17:02:41.461
+af746c7e-a9aa-44a7-ab4c-a07172aeda85	MERCEARIA BARROS R3 GS LTDA	31.320.128/0001-66	\N	\N	f	f	\N	\N	MERCEARIA BARROS R3 GS LTDA	\N	RUA DORCELINO, 10, CENTRO, Naque, MG - CEP: 35117000.	\N	\N	\N	\N	\N	robertobarrossbs@gmail.com	\N	\N	\N	Ativa	2026-01-26 17:02:41.47	2026-01-26 17:02:41.47
+9e6e5af3-9bdc-467e-914c-1fd8ef58d183	MERCEARIA MARTINS	28.708.149/0001-49	\N	\N	f	f	\N	\N	MERCEARIA MARTINS & COELHO LTDA	\N	R CISNE, 28, VILA CELESTE, Ipatinga, MG - CEP: 35162495.	\N	\N	\N	\N	\N	\N	\N	\N	\N	Ativa	2026-01-26 17:02:41.479	2026-01-26 17:02:41.479
+f1a53092-e882-4aaa-bd02-03a57c88917c	MICHELE DE ALMEIDA MOREIRA FONTES	28.403.439/0001-84	\N	\N	f	f	\N	\N	MICHELE DE ALMEIDA MOREIRA FONTES	\N	CORREGO SANTO ESTEVÃO, ZONA RURAL, Iapu, MG - CEP: 35190000.	\N	\N	\N	\N	\N	LEONARDOSOARESMOREIRA80@GMAIL.COM	\N	\N	\N	Ativa	2026-01-26 17:02:41.488	2026-01-26 17:02:41.488
+6cbb3668-1a6c-438d-97bd-862b434c6cfb	MODA KIDS INFANTIL LTDA	61.915.207/0001-80	\N	\N	f	f	\N	\N	MODA KIDS INFANTIL LTDA	\N	Avenida Vinte e Oito de Abril, 620, loja A, Centro, Ipatinga, MG - CEP: 35160004.	\N	\N	\N	\N	\N	\N	\N	\N	\N	Ativa	2026-01-26 17:02:41.497	2026-01-26 17:02:41.497
+c7dd8ebf-9bf9-43bb-8580-155e9046313c	MONICA CRESPO BRITO	51.484.763/0001-96	\N	\N	f	f	\N	\N	MONICA CRESPO BRITO	\N	Rua Apucarana, 655, Caravelas, Ipatinga, MG - CEP: 35164264.	\N	\N	\N	\N	\N	\N	\N	\N	\N	Ativa	2026-01-26 17:02:41.506	2026-01-26 17:02:41.506
+bb06c8f2-a032-4f8a-ba5d-c891845b4f9e	N. M MOREIRA	30.894.266/0001-96	\N	\N	f	f	\N	\N	N. M. MOREIRA	\N	AV SAO PAULO, 123, PARQUE CARAVELAS, Santana do Paraiso, MG - CEP: 35179000.	\N	\N	\N	\N	\N	\N	\N	\N	\N	Ativa	2026-01-26 17:02:41.515	2026-01-26 17:02:41.515
+814c5991-3009-4062-9f33-2c12b430fbc0	NATALIA VIVIANE RODRIGUES - SUPER STILLO	12.647.876/0001-03	\N	\N	f	f	\N	\N	NATALIA VIVIANE RODRIGUES 01216860602	\N	AV FLORES, 734, LOJA, BOM JARDIM, Ipatinga, MG - CEP: 35162263.	\N	\N	\N	\N	\N	\N	\N	\N	\N	Ativa	2026-01-26 17:02:41.524	2026-01-26 17:02:41.524
+26431956-4b5b-47c1-ac01-e188284039e6	NOBRES COLCHOES LTDA	57.295.967/0001-65	\N	\N	f	f	\N	\N	NOBRES COLCHOES LTDA	\N	Avenida Juscelino Kubitschek, 785, Jardim Panorama, Ipatinga, MG - CEP: 35164245.	\N	\N	\N	\N	\N	nobrescolchoes@outlook.com	\N	\N	\N	Ativa	2026-01-26 17:02:41.533	2026-01-26 17:02:41.533
+3277b3cf-3427-40b4-b030-f88b74007b49	NOGUEIRA MAIS	44.921.809/0001-21	\N	\N	f	f	\N	\N	NOGUEIRA MAIS LTDA	\N	R SEBASTIAO BARBOSA, 67, ESPERANCA, Ipatinga, MG - CEP: 35162344.	\N	\N	\N	\N	\N	\N	\N	\N	\N	Ativa	2026-01-26 17:02:41.542	2026-01-26 17:02:41.542
+32f52584-b018-4d0c-8d6f-8fbe2621fc8d	NUNES DISTRIBUICAO DE COSMETICOS LTDA	38.259.432/0001-94	\N	\N	f	f	\N	\N	NUNES DISTRIBUICAO DE COSMETICOS LTDA	\N	R BELO HORIZONTE, 868, ********, CALADINHO, Coronel Fabriciano, MG - CEP: 35171167.	\N	\N	\N	\N	\N	\N	\N	\N	\N	Ativa	2026-01-26 17:02:41.551	2026-01-26 17:02:41.551
+a14c6707-bf5c-4b3f-ac70-b5a97fb700fc	O REI DAS CESTAS	60.435.281/0001-37	\N	\N	f	f	\N	\N	REI DAS CESTAS DISTRIBUIDORA LTDA	\N	R SAO FELICIANO, 11, CAICARAS, Belo Horizonte, MG - CEP: 30775430.	\N	\N	\N	\N	\N	\N	\N	\N	\N	Ativa	2026-01-26 17:02:41.56	2026-01-26 17:02:41.56
+c4cf3e24-e773-43a9-b662-66def67489df	OLAVIO GOMES DA SILVA	02.833.971/0001-48	\N	\N	f	f	\N	\N	OLAVIO GOMES DA SILVA	\N	R SERRA DO MAR, 1215, JARDIM PANORAMA, Ipatinga, MG - CEP: 35164238.	\N	\N	\N	\N	\N	\N	\N	\N	\N	Ativa	2026-01-26 17:02:41.571	2026-01-26 17:02:41.571
+9c21cc77-5829-4642-92d3-99a6d30980d2	OLIVEIRA FOODS ATACAREJO LTDA	08.504.258/0001-37	\N	\N	f	f	\N	\N	OLIVEIRA FOODS ATACAREJO LTDA	\N	Avenida Geraldo Inácio, 779, - até 1383/1384, Melo Viana, Coronel Fabriciano, MG - CEP: 35170150.	\N	\N	\N	\N	\N	oliveiraecarvalho1@gmail.com	\N	\N	\N	Ativa	2026-01-26 17:02:41.58	2026-01-26 17:02:41.58
+7067329f-0ad0-4e84-9a17-25252eace50d	ORGANZA MODAS	39.786.584/0001-08	\N	\N	f	f	\N	\N	ORGANZA MODAS LTDA	\N	R PONTE NOVA, 87, ********, CENTRO, Ipatinga, MG - CEP: 35160017.	\N	\N	\N	\N	\N	\N	\N	\N	\N	Ativa	2026-01-26 17:02:41.588	2026-01-26 17:02:41.588
+a6d47a4f-57ba-49a1-9438-e5db7b5dbb32	ORIENTAL BUFFET ABRANTES LTDA	02.562.856/0001-86	\N	\N	f	f	\N	\N	ORIENTAL BUFFET ABRANTES LTDA	\N	Avenida Pedro Linhares Gomes, 3900, LOJA 101, Horto, Ipatinga, MG - CEP: 35160290.	\N	\N	\N	\N	\N	\N	\N	\N	\N	Ativa	2026-01-26 17:02:41.597	2026-01-26 17:02:41.597
+c516bb60-e93a-414c-b65d-c16222195140	PADARIA ALVES & BRAGA	27.600.838/0001-72	\N	\N	f	f	\N	\N	PANIFICADORA ALVES & BRAGA LTDA	\N	AV JOSE ANATOLIO BARBOSA, 1530, LOJA, LIMOEIRO, Ipatinga, MG - CEP: 35162450.	\N	\N	\N	\N	\N	orlandomartins2727@gmail.com	\N	\N	\N	Ativa	2026-01-26 17:02:41.61	2026-01-26 17:02:41.61
+f45b8670-8d21-4137-8198-10117204f6a6	PADARIA DA NEIDE LTDA	51.151.114/0001-73	\N	\N	f	f	\N	\N	PADARIA DA NEIDE LTDA	\N	AV JOSE ANATOLIO BARBOSA, 1362, LIMOEIRO, Ipatinga, MG - CEP: 35162450.	\N	\N	\N	\N	\N	\N	\N	\N	\N	Ativa	2026-01-26 17:02:41.619	2026-01-26 17:02:41.619
+fa054363-e054-47a9-b7bd-bb420f9d60e5	PADARIA FAMILIA FRANCO LTDA	33.232.450/0001-69	\N	\N	f	f	\N	\N	PADARIA FAMILIA FRANCO LTDA	\N	AV MINAS GERAIS, 482, LOJA B, INDUSTRIAL, Santana do Paraiso, MG - CEP: 35179000.	\N	\N	\N	\N	\N	FRANCOROSEMEIRE6@GMAIL.COM	\N	\N	\N	Ativa	2026-01-26 17:02:41.628	2026-01-26 17:02:41.628
+36bc7f3c-f868-45ab-9ef4-2ffbc17e9c5f	PADARIA LELES	09.565.493/0001-81	\N	\N	f	f	\N	\N	LEOMAR LELES DA SILVA & CIA LTDA	\N	AV JOSE ANATOLIO BARBOSA, 1040, LOJA: A;, LIMOEIRO, Ipatinga, MG - CEP: 35162450.	\N	\N	\N	\N	\N	padarialeles@gmail.com	\N	\N	\N	Ativa	2026-01-26 17:02:41.637	2026-01-26 17:02:41.637
+0f412ee5-4a62-4ce7-805c-4623d74acc56	PADARIA NOVA VITORIA	34.423.288/0001-29	\N	\N	f	f	\N	\N	PADARIA E CONFEITARIA NOVA VITORIA EIRELI	\N	R SIQUEM, 1060, LOJA 01, CANAA, Ipatinga, MG - CEP: 35164218.	\N	\N	\N	\N	\N	MARLENE11FERNANDO@OUTLOOK.COM	\N	\N	\N	Ativa	2026-01-26 17:02:41.646	2026-01-26 17:02:41.646
+76c71c79-14db-4771-827b-e667072c457a	PADARIA SANTO ANTONIO MESQUITA LTDA	62.335.314/0001-00	\N	\N	f	f	\N	\N	PADARIA SANTO ANTONIO MESQUITA LTDA	\N	Rua Presidente Getúlio Vargas,, 16, Centro, Mesquita, MG - CEP: 35116970.	\N	\N	\N	\N	\N	\N	\N	\N	\N	Ativa	2026-01-26 17:02:41.655	2026-01-26 17:02:41.655
+109b7574-9dfb-4a2c-a486-d3506be1ac7b	PANIFICADORA IRMAOS ALVES LTDA - PADARIA LALA	02.680.992/0001-70	\N	\N	f	f	\N	\N	PANIFICADORA IRMAOS ALVES LTDA	\N	R SANTA CATARINA, 754, AMARO LANARI, Coronel Fabriciano, MG - CEP: 35171343.	\N	\N	\N	\N	\N	\N	\N	\N	\N	Ativa	2026-01-26 17:02:41.663	2026-01-26 17:02:41.663
+7c814d3e-84b2-49c1-93c6-63344ec07473	PANIFICADORA THALISSON VICENTE LTDA	51.717.202/0001-90	\N	\N	f	f	\N	\N	PANIFICADORA THALISSON VICENTE LTDA	\N	Avenida Flores, 1400, - de 1047/1048 ao fim, Bom Jardim, Ipatinga, MG - CEP: 35162264.	\N	\N	\N	\N	\N	\N	\N	\N	\N	Ativa	2026-01-26 17:02:41.671	2026-01-26 17:02:41.671
+c622de7a-a4f8-4e91-8a7a-c984a9d233b3	PASTEL & CANA 1 - LOJA NOVA	50.991.316/0001-60	\N	\N	f	f	\N	\N	PASTEL & CANA CENTRO 1 LTDA	\N	R POUSO ALEGRE, 165, CENTRO, Ipatinga, MG - CEP: 35160036.	\N	\N	\N	\N	\N	\N	\N	\N	\N	Ativa	2026-01-26 17:02:41.68	2026-01-26 17:02:41.68
+f3b3dd8b-1729-4481-81b5-f30721040717	PASTELICO SHOPPING	02.733.227/0001-71	\N	\N	f	f	\N	\N	PASTELICO LTDA	\N	BR 381 KM 206, S/N, LOJA 47, IDUSTRIAL, Ipatinga, MG - CEP: 35160290.	\N	\N	\N	\N	\N	\N	\N	\N	\N	Ativa	2026-01-26 17:02:41.688	2026-01-26 17:02:41.688
+61b11915-bbb7-4718-bc4a-4658b6c629f7	PEEFERIA NUCAPRICHU LTDA	60.131.608/0001-87	\N	\N	f	f	\N	\N	PEEFERIA NUCAPRICHO LTDA	\N	Avenida Japão, 844, - de 751/752 ao fim, Cariru, Ipatinga, MG - CEP: 35160119.	\N	\N	\N	\N	\N	\N	\N	\N	\N	Ativa	2026-01-26 17:02:41.697	2026-01-26 17:02:41.697
+335cfdaa-dc3e-4a05-841c-735b9ff62f36	PESQUE E PAGUE BOM JARDIM	53.454.246/0001-08	\N	\N	f	f	\N	\N	PESQUE E PAGUE BOM JARDIM LTDA	\N	R MARIA DA GLORIA BARBOSA, 214, BOM JARDIM, Ipatinga, MG - CEP: 35162281.	\N	\N	\N	\N	\N	bomjardimpesqueepague@gmail.com	\N	\N	\N	Ativa	2026-01-26 17:02:41.705	2026-01-26 17:02:41.705
+24722ccb-ff95-4e9b-962b-8cfce34f8f6e	PETFISH AQUARISMO	39.780.187/0001-29	\N	\N	f	f	\N	\N	PET FISH AQUARISMO LTDA	\N	R JASPE, 80, ********, IGUACU, Ipatinga, MG - CEP: 35162077.	\N	\N	\N	\N	\N	\N	\N	\N	\N	Ativa	2026-01-26 17:02:41.713	2026-01-26 17:02:41.713
+9b7ccf72-9f90-40e5-be71-8a5b43a19201	PIMPAS PIZZARIA	29.759.254/0001-70	\N	\N	f	f	\N	\N	PIMPAS PIZZARIA NOGUEIRA E PAULA LTDA	\N	R MANGARATIBA, 250, LOJA 03, VENEZA, Ipatinga, MG - CEP: 35164299.	\N	\N	\N	\N	\N	\N	\N	\N	\N	Ativa	2026-01-26 17:02:41.722	2026-01-26 17:02:41.722
+9d7fd037-a741-44c8-8fb1-a0992d4288ad	PRIME FOODS ATACAREJO LTDA	52.539.662/0001-38	\N	\N	f	f	\N	\N	PRIME FOODS ATACAREJO LTDA	\N	Avenida Geraldo Inácio, 761, - até 1383/1384, Melo Viana, Coronel Fabriciano, MG - CEP: 35170150.	\N	\N	\N	\N	\N	primefoodsatacarejo@gmail.com	\N	\N	\N	Ativa	2026-01-26 17:02:41.731	2026-01-26 17:02:41.731
+6b95eef0-be6d-4210-bbf8-54e40ab43b28	PRODUTOS AGROPECUARIOS SALERMO LTDA - RURALISTA SALERMO	06.983.635/0001-32	\N	\N	f	f	\N	\N	PRODUTOS AGROPECUARIOS SALERMO LTDA	\N	AV BRASILIA, 2159, LOJA, AMARO LANARI, Coronel Fabriciano, MG - CEP: 35171346.	\N	\N	\N	\N	\N	\N	\N	\N	\N	Ativa	2026-01-26 17:02:41.739	2026-01-26 17:02:41.739
+4d7102e2-c836-4c39-9585-b75443fed093	QUINTELA E SOUSA LANCHES LTDA	26.550.124/0001-34	\N	\N	f	f	\N	\N	QUINTELA E SOUSA LANCHES LTDA	\N	R SAUDADE, 35, GALPAO, ESPERANCA, Ipatinga, MG - CEP: 35162343.	\N	\N	\N	\N	\N	\N	\N	\N	\N	Ativa	2026-01-26 17:02:41.747	2026-01-26 17:02:41.747
+89caacf1-a234-4f81-bb7c-7aafde329548	R P ALVES - RELOGIARIA FUTURAMA	30.248.419/0001-28	\N	\N	f	f	\N	\N	R P ALVES	\N	R PINHEIROS, 15, HORTO, Ipatinga, MG - CEP: 35160313.	\N	\N	\N	\N	\N	\N	\N	\N	\N	Ativa	2026-01-26 17:02:41.754	2026-01-26 17:02:41.754
+5f13f7f1-87e8-46cb-b2f1-6a8ee8eaa814	RADIADORES VALE DO AÇO LTDA	00.885.833/0001-87	\N	\N	f	f	\N	\N	RADIADORES VALE DO AÇO LTDA	\N	Avenida Presidente Tancredo de Almeida Neves, 674, - até 1774/1775, Todos os Santos, Coronel Fabriciano, MG - CEP: 35170054.	\N	\N	\N	\N	\N	radiadoresvaledoaco@hotmail.com	\N	\N	\N	Ativa	2026-01-26 17:02:41.762	2026-01-26 17:02:41.762
+b2bd47f0-9dd2-4d0a-8996-fd4af5a56c60	RAFAEL DE OLIVEIRA GOMES	33.546.574/0001-19	\N	\N	f	f	\N	\N	RAFAEL DE OLIVEIRA GOMES	\N	RUA LIDIA PINTO FERNANDES, 60, CENTRO, Naque, MG - CEP: 35117000.	\N	\N	\N	\N	\N	\N	\N	\N	\N	Ativa	2026-01-26 17:02:41.77	2026-01-26 17:02:41.77
+12d019da-9e2d-41a6-83a6-13efa799be93	RANCHO DO COWBOY PESQUEIRO	37.012.426/0001-75	\N	\N	f	f	\N	\N	RANCHO DO COWBOY PESQUEIRO LTDA	\N	AV JOSE ANATOLIO BARBOSA, 4500, ********, TRIBUNA, Ipatinga, MG - CEP: 35160970.	\N	\N	\N	\N	\N	\N	\N	\N	\N	Ativa	2026-01-26 17:02:41.779	2026-01-26 17:02:41.779
+0907b979-ea3b-46fd-b3f3-f657ac4c62a8	RAQUEL AP GOMES LTDA	23.555.328/0001-70	\N	\N	f	f	\N	\N	RAQUEL AP GOMES LTDA	\N	AV BRASIL, 100, IGUACU, Ipatinga, MG - CEP: 35162036.	\N	\N	\N	\N	\N	\N	\N	\N	\N	Ativa	2026-01-26 17:02:41.787	2026-01-26 17:02:41.787
+adedf5af-beb8-4b5a-a78e-5f8c28a7de11	RENATA RODRIGUES BARBOSA OLIVEIRA - SACOLAO OLIVEIRA IGUAÇU	45.549.068/0001-62	\N	\N	f	f	\N	\N	RENATA RODRIGUES BARBOSA OLIVEIRA 10684584611	\N	R QUARTZO, 415, LOJA A, IGUACU, Ipatinga, MG - CEP: 35162113.	\N	\N	\N	\N	\N	\N	\N	\N	\N	Ativa	2026-01-26 17:02:41.795	2026-01-26 17:02:41.795
+4dc0d134-9c46-44a6-b8af-5bb4365d5b52	RESTAURANTE TRADIÇÃO CIDADE NOBRE LTDA	86.593.027/0001-50	\N	\N	f	f	\N	\N	RESTAURANTE TRADIÇÃO CIDADE NOBRE LTDA	\N	Avenida Carlos Chagas, 294, B, Cidade Nobre, Ipatinga, MG - CEP: 35162359.	\N	\N	\N	\N	\N	\N	\N	\N	\N	Ativa	2026-01-26 17:02:41.804	2026-01-26 17:02:41.804
+d526d6c7-7453-4fb8-b2e0-97dcf0a324aa	RIMAC PRODUCOES FOTOGRAFICOS	33.726.903/0001-03	\N	\N	f	f	\N	\N	RIMAC PRODUCOES FOTOGRAFICOS LTDA	\N	R AMSTERDAM, 202, BETHANIA, Ipatinga, MG - CEP: 35164020.	\N	\N	\N	\N	\N	\N	\N	\N	\N	Ativa	2026-01-26 17:02:41.812	2026-01-26 17:02:41.812
+bea44c75-fda4-46b7-85f8-372f73368353	RIVAINY MATOS DE ALMEIDA	35.799.842/0001-30	\N	\N	f	f	\N	\N	RIVAINY MATOS DE ALMEIDA 03608223630	\N	R RUA DORCELINO, 340, NAQUE, Naque, MG - CEP: 35117000.	\N	\N	\N	\N	\N	\N	\N	\N	\N	Ativa	2026-01-26 17:02:41.82	2026-01-26 17:02:41.82
+d9ceac3f-2bd4-498f-a56c-9f90f60ea691	RODOLANCHES IPATINGA LTDA	55.422.961/0001-86	\N	\N	f	f	\N	\N	RODOLANCHES IPATINGA LTDA	\N	AV JOAO VALENTIM PASCOAL, 637, ********, CENTRO, Ipatinga, MG - CEP: 35160002.	\N	\N	\N	\N	\N	lanchonete@servla.com.br	\N	\N	\N	Ativa	2026-01-26 17:02:41.831	2026-01-26 17:02:41.831
+af1a9681-1ee1-4d4b-a524-cb7bbcf6246b	ROGERIO QUINTANILHA MENEZES	33.053.567/0001-85	\N	\N	f	f	\N	\N	ROGERIO QUINTANILHA MENEZES	\N	Avenida Itália Zagnoli da Silva, 220, Jardim Primavera, Coronel Fabriciano, MG - CEP: 35172339.	\N	\N	\N	\N	\N	aleisianegracas@gmail.com	\N	\N	\N	Ativa	2026-01-26 17:02:41.841	2026-01-26 17:02:41.841
+2624305e-c6b2-42e1-a8cb-3b7015b94871	ROSA NAZARETH PADARIA E CONFEITARIA LTDA - COZY PADARIA	31.599.816/0001-07	\N	\N	f	f	\N	\N	ROSA NAZARETH PADARIA E CONFEITARIA LTDA	\N	AV MACAPA, 290, LOJA B, VENEZA, Ipatinga, MG - CEP: 35164253.	\N	\N	\N	\N	\N	osoriolacerda@gmail.com	\N	\N	\N	Ativa	2026-01-26 17:02:41.848	2026-01-26 17:02:41.848
+5e6dca13-4603-4cfc-b2f9-5dbb54400c7a	ROSAMARIA RESTAURANTE	12.458.278/0001-96	\N	\N	f	f	\N	\N	ROSAMARIA RESTAURANTE E LANCHONETE LTDA	\N	AV MACAPA, 430, LOJA: B;, VENEZA, Ipatinga, MG - CEP: 35164253.	\N	\N	\N	\N	\N	\N	\N	\N	\N	Ativa	2026-01-26 17:02:41.856	2026-01-26 17:02:41.856
+ff0d7658-ccc6-408a-bb5d-516be97d9328	ROSILDA SOARES	28.248.178/0001-75	\N	\N	f	f	\N	\N	ROSILDA SOARES FERREIRA BARBOSA 98834150600	\N	R APUCARANA, 490, ********, CARAVELAS, Ipatinga, MG - CEP: 35164264.	\N	\N	\N	\N	\N	rosildasoares22@hotmail.com	\N	\N	\N	Ativa	2026-01-26 17:02:41.863	2026-01-26 17:02:41.863
+898af423-da66-4ae5-b6d5-f26381b15b9b	RSC COMERCIO VAREJISTA LTDA	45.349.430/0001-51	\N	\N	f	f	\N	\N	RSC COMERCIO VAREJISTA LTDA	\N	AV JOAO VALENTIM PASCOAL, 81, CENTRO, Ipatinga, MG - CEP: 35160002.	\N	\N	\N	\N	\N	ronecouto2@gmail.com	\N	\N	\N	Ativa	2026-01-26 17:02:41.87	2026-01-26 17:02:41.87
+bb1cfe9f-673c-46ed-ad29-0f594c5bb7ea	RURALISTA AGROMAX	51.404.379/0001-36	\N	\N	f	f	\N	\N	RURALISTA AGROMAX LTDA	\N	R JOSEFINO INACIO DE SA, 265, CENTRO, Ipaba, MG - CEP: 35198000.	\N	\N	\N	\N	\N	\N	\N	\N	\N	Ativa	2026-01-26 17:02:41.877	2026-01-26 17:02:41.877
+d5bf5d21-53af-4e6c-be2f-397025b85166	S F DE OLIVEIRA JUNIOR	57.972.449/0001-39	\N	\N	f	f	\N	\N	S F DE OLIVEIRA JUNIOR	\N	RUA GICO SANTOS, 20, LOJA 1, CENTRO, Bugre, MG - CEP: 35193000.	\N	\N	\N	\N	\N	\N	\N	\N	\N	Ativa	2026-01-26 17:02:41.884	2026-01-26 17:02:41.884
+56f4b1d8-2c90-44ed-8c21-241e6ad649d3	SABRINA SANTOS CERQUEIRA SERRA	33.514.172/0001-32	\N	\N	f	f	\N	\N	SABRINA SANTOS CERQUEIRA SERRA	\N	Rua Jacarandá, 628, loja 3, Horto, Ipatinga, MG - CEP: 35160304.	\N	\N	\N	\N	\N	\N	\N	\N	\N	Ativa	2026-01-26 17:02:41.892	2026-01-26 17:02:41.892
+51db552f-42de-4131-a064-6b8887177cb7	SACOLAO AVENIDA	27.261.074/0001-38	\N	\N	f	f	\N	\N	SACOLAO AVENIDA COMERCIO DE ALIMENTOS LTDA	\N	R RAIMUNDO ALVES DE CARVALHO, 323, SANTA TEREZINHA II, Coronel Fabriciano, MG - CEP: 35171140.	\N	\N	\N	\N	\N	Vinicius.quintanilha@outlook.com	\N	\N	\N	Ativa	2026-01-26 17:02:41.9	2026-01-26 17:02:41.9
+afc55773-3f9e-4b3b-9c84-9e1a08dac618	SALES MOURA TECIDOS LTDA	56.172.841/0001-30	\N	\N	f	f	\N	\N	SALES MOURA TECIDOS LTDA	\N	Rua Ponte Nova, 34, LOJA A, Centro, Ipatinga, MG - CEP: 35160017.	\N	\N	\N	\N	\N	smtecidos23@gmail.com	\N	\N	\N	Ativa	2026-01-26 17:02:41.908	2026-01-26 17:02:41.908
+7e87b304-c836-4f65-a3f4-9f419aa2f0a8	SALVINA DE ASSIS & CIA LTDA	08.161.789/0001-74	\N	\N	f	f	\N	\N	SALVINA DE ASSIS & CIA LTDA	\N	R SIQUEM, 730, LOJA 3, CANAA, Ipatinga, MG - CEP: 35164218.	\N	\N	\N	\N	\N	gs.santos@outlook.com	\N	\N	\N	Ativa	2026-01-26 17:02:41.915	2026-01-26 17:02:41.915
+65cfae16-592a-4812-a463-20ecd0779a5b	SAM MOVEIS LTDA	62.414.277/0001-18	\N	\N	f	f	\N	\N	SAM MOVEIS LTDA	\N	R JACARANDA, 408, HORTO, Ipatinga, MG - CEP: 35160304.	\N	\N	\N	\N	\N	\N	\N	\N	\N	Ativa	2026-01-26 17:02:41.922	2026-01-26 17:02:41.922
+6217ed28-1c5f-4469-a0f7-1d76c1e65769	SAMUEL DO NASCIMENTO	58.339.524/0001-91	\N	\N	f	f	\N	\N	SAMUEL DO NASCIMENTO	\N	R BELO HORIZONTE, 289, LOJA 5, CENTRO, Ipatinga, MG - CEP: 35160034.	\N	\N	\N	\N	\N	\N	\N	\N	\N	Ativa	2026-01-26 17:02:41.931	2026-01-26 17:02:41.931
+f3f4f975-639f-4a24-a219-a345377d8928	SANDILA ROZA OLIVEIRA RONCALLY	50.445.051/0001-03	\N	\N	f	f	\N	\N	SANDILA ROZA OLIVEIRA RONCALLY	\N	Rua Borba Gato, 215, Bom Retiro, Ipatinga, MG - CEP: 35160217.	\N	\N	\N	\N	\N	sandilaroncally@hotmail.com	\N	\N	\N	Ativa	2026-01-26 17:02:41.939	2026-01-26 17:02:41.939
+0e088030-e5d8-40b5-9934-57b90fc583d1	SAO JOSE DEPOSITO DE CONSTRUCAO LTDA	55.530.396/0001-70	\N	\N	f	f	\N	\N	SAO JOSE DEPOSITO DE CONSTRUCAO LTDA	\N	AV FLORES, 294, BOM JARDIM, Ipatinga, MG - CEP: 35162263.	\N	\N	\N	\N	\N	\N	\N	\N	\N	Ativa	2026-01-26 17:02:41.947	2026-01-26 17:02:41.947
+f06204ea-7a5e-43ae-aff2-90f316d0735c	SAO MIGUEL PRE MOLDADOS LTDA	57.142.146/0001-99	\N	\N	f	f	\N	\N	SAO MIGUEL PRE MOLDADOS LTDA	\N	RUA 05, 737, Ilha do Rio Doce, Caratinga, MG - CEP: 35317000.	\N	\N	\N	\N	\N	SAOMIGUELPREMOL@GMAIL.COM	\N	\N	\N	Ativa	2026-01-26 17:02:41.954	2026-01-26 17:02:41.954
+71e96dc7-3fb7-48d6-93a2-3ba2bdf3e3b4	SD COMERCIO DE ALIMENTOS LTDA	32.184.310/0001-08	\N	\N	f	f	\N	\N	SD COMERCIO DE ALIMENTOS LTDA	\N	R TIMOTEO, 477, LOJA A, BELA VISTA, Ipatinga, MG - CEP: 35160205.	\N	\N	\N	\N	\N	\N	\N	\N	\N	Ativa	2026-01-26 17:02:41.961	2026-01-26 17:02:41.961
+30f94cce-4cbc-4284-9a88-b404fa5a39ea	SEA FLOAT BRASIL INDUSTRIA	40.576.570/0001-49	\N	\N	f	f	\N	\N	SEA FLOAT BRASIL INDUSTRIA E COMERCIO LTDA	\N	R JUIZ DE FORA, 32, LOJA 405, CENTRO, Ipatinga, MG - CEP: 35160031.	\N	\N	\N	\N	\N	\N	\N	\N	\N	Ativa	2026-01-26 17:02:41.969	2026-01-26 17:02:41.969
+b360f055-423c-4e56-b4ed-6b346f387521	SEA FLOAT COMERCIO	49.866.911/0001-95	\N	\N	f	f	\N	\N	SEA FLOAT COMERCIO LTDA	\N	R ZUNIA, 61, BOM JARDIM, Ipatinga, MG - CEP: 35162307.	\N	\N	\N	\N	\N	\N	\N	\N	\N	Ativa	2026-01-26 17:02:41.976	2026-01-26 17:02:41.976
+9667ed44-6079-4131-b908-506f164d3acb	SEBASTIAO BARBOSA DE ABREU - DEPOSITO TIAO TIMOTEO	06.014.215/0001-48	\N	\N	f	f	\N	\N	SEBASTIAO BARBOSA DE ABREU	\N	R GRADENOR DE MELO, 193, CENTRO, Bugre, MG - CEP: 35193000.	\N	\N	\N	\N	\N	\N	\N	\N	\N	Ativa	2026-01-26 17:02:41.983	2026-01-26 17:02:41.983
+b7fd1f02-8704-45a3-83cc-3c7d8ddf43bf	SERGIO GOMES VIEIRA	06.255.548/0001-69	\N	\N	f	f	\N	\N	SERGIO GOMES VIEIRA	\N	R CARUARU, 110, ********, CARAVELAS, Ipatinga, MG - CEP: 35164273.	\N	\N	\N	\N	\N	varejaobompreco1@gmail.com	\N	\N	\N	Ativa	2026-01-26 17:02:41.99	2026-01-26 17:02:41.99
+f64840e0-76b3-46ca-ad92-b48d88bc1ff4	SILVEIRA E CAVAGLIERI LTDA	06.183.496/0001-62	\N	\N	f	f	\N	\N	SILVEIRA E CAVAGLIERI LTDA	\N	R NICARAGUA, 88, LOJA 1, CARIRU, Ipatinga, MG - CEP: 35160125.	\N	\N	\N	\N	\N	\N	\N	\N	\N	Ativa	2026-01-26 17:02:41.997	2026-01-26 17:02:41.997
+0cdbdcf8-90d8-4eb9-84eb-1c1a13d2fba7	SOLUCAO ELETRICA ADJACO	55.664.926/0001-73	\N	\N	f	f	\N	\N	SOLUCAO ELETRICA ADJACO LTDA	\N	R JOSE SILVIO PEREIRA, 5, CENTRO, Belo Oriente, MG - CEP: 35196000.	\N	\N	\N	\N	\N	zicoadriano@yahoo.com.br	\N	\N	\N	Ativa	2026-01-26 17:02:42.005	2026-01-26 17:02:42.005
+a03f4586-0382-482a-a3e8-11d4d7c1e0fd	SOLUCAO FERRAMENTAS E CIA	32.275.011/0001-70	\N	\N	f	f	\N	\N	SOLUCAO FERRAMENTAS LTDA	\N	AV PRESIDENTE TANCREDO DE ALMEIDA NEVES, 1135, TODOS OS SANTOS, Coronel Fabriciano, MG - CEP: 35170054.	\N	\N	\N	\N	\N	\N	\N	\N	\N	Ativa	2026-01-26 17:02:42.013	2026-01-26 17:02:42.013
+bfb4a508-6362-4bd2-b065-997e85d53d64	SONIA MARIA	05.232.406/0001-13	\N	\N	f	f	\N	\N	SONIA MARIA OLIVEIRA DIAS	\N	R AGUAS MARINHAS, 190, FUNDOS, IGUACU, Ipatinga, MG - CEP: 35162014.	\N	\N	\N	\N	\N	\N	\N	\N	\N	Ativa	2026-01-26 17:02:42.022	2026-01-26 17:02:42.022
+89bd9cb7-3730-48b6-a3d7-90db6dfaa1d5	SOUZA & SOUZA PANIFICACAO E CONFEITARIA LTDA	57.932.064/0001-48	\N	\N	f	f	\N	\N	SOUZA & SOUZA PANIFICACAO E CONFEITARIA LTDA	\N	R SERRA DOS COCAIS, 85, JARDIM PANORAMA, Ipatinga, MG - CEP: 35164232.	\N	\N	\N	\N	\N	\N	\N	\N	\N	Ativa	2026-01-26 17:02:42.028	2026-01-26 17:02:42.028
+1cd1c8fa-ce67-4a32-a9a5-bbf478198854	STOP CELULAR	37.083.504/0001-22	\N	\N	f	f	\N	\N	STOP CELULAR LTDA	\N	AV VINTE E OITO DE ABRIL, 47, LOJA 1 A, CENTRO, Ipatinga, MG - CEP: 35160004.	\N	\N	\N	\N	\N	fabriziomultimarcas@hotmail.com	\N	\N	\N	Ativa	2026-01-26 17:02:42.036	2026-01-26 17:02:42.036
+c81ebd98-63ac-4ebb-b911-e2448847982f	SUPERMERCADO IPATINGA	64.332.026/0001-10	\N	\N	f	f	\N	\N	SUPERMERCADO IPATINGA LTDA	\N	AV DAS FLORES, 982, ESQ COM RUA LIRIO, BOM JARDIM, Ipatinga, MG - CEP: 35162263.	\N	\N	\N	\N	\N	\N	\N	\N	\N	Ativa	2026-01-26 17:02:42.042	2026-01-26 17:02:42.042
+91c336cc-66c7-4b64-a4ca-5ac0e874c9a7	THABATA FERNANDES - BABY STORE IDEAL	31.127.155/0001-17	\N	\N	f	f	\N	\N	THABATA FERNANDES DE SOUSA	\N	R DILERMANO REIS, 345, ********, IDEAL, Ipatinga, MG - CEP: 35162173.	\N	\N	\N	\N	\N	babystoreipatinga@gmail.com	\N	\N	\N	Ativa	2026-01-26 17:02:42.049	2026-01-26 17:02:42.049
+e23671dd-7794-4c6a-ace0-5b437520969d	THAYS BATISTA DA ROCHA ASSIS	45.524.416/0001-47	\N	\N	f	f	\N	\N	THAYS BATISTA DA ROCHA	\N	Rua Treze de Maio, 59, Das Águas, Ipatinga, MG - CEP: 35160171.	\N	\N	\N	\N	\N	thaysenf23@gmail.com	\N	\N	\N	Ativa	2026-01-26 17:02:42.057	2026-01-26 17:02:42.057
+b1fdf892-f841-400f-9c1e-591b7362f6b1	THRIMIX LTDA - CIA DAS ESSENCIAS	22.710.602/0001-75	\N	\N	f	f	\N	\N	THRIMIX LTDA	\N	R POCOS DE CALDAS, 190, LOJA 06, CENTRO, Ipatinga, MG - CEP: 35160004.	\N	\N	\N	\N	\N	thrimix@gmail.com	\N	\N	\N	Ativa	2026-01-26 17:02:42.066	2026-01-26 17:02:42.066
+3304ae53-445d-4132-b6cd-8bd4355a64da	TIA SASSA PRODUTOS NATURAIS E LOW CARB LTDA	38.106.122/0001-30	\N	\N	f	f	\N	\N	TIA SASSA PRODUTOS NATURAIS E LOW CARB LTDA	\N	R ANGELICA, 43, LOJA A, PROFESSORES, Coronel Fabriciano, MG - CEP: 35170011.	\N	\N	\N	\N	\N	\N	\N	\N	\N	Ativa	2026-01-26 17:02:42.074	2026-01-26 17:02:42.074
+dbdef16e-99cc-4eb5-b8a4-b1f49411a4df	TIA SASSA PRODUTOS NATURAIS E LOW CARB LTDA - FILIAL	38.106.122/0002-10	\N	\N	f	f	\N	\N	TIA SASSA PRODUTOS NATURAIS E LOW CARB LTDA	\N	Avenida Carlos Chagas, 443, Cidade Nobre, Ipatinga, MG - CEP: 35162359.	\N	\N	\N	\N	\N	\N	\N	\N	\N	Ativa	2026-01-26 17:02:42.082	2026-01-26 17:02:42.082
+f929427d-adfd-4e82-8e3f-d7d28242267d	TRATZ INDUSTRIA E COMERCIO LTDA	62.847.897/0001-40	\N	\N	f	f	\N	\N	TRATZ INDUSTRIA E COMERCIO LTDA	\N	RUA BOA VISTA, 04, CHACARA BOA VISTA, Santana do Paraiso, MG.	\N	\N	\N	\N	\N	\N	\N	\N	\N	Ativa	2026-01-26 17:02:42.091	2026-01-26 17:02:42.091
+ea8e7b51-ddca-4107-afd3-10708e6f274f	UNIAO AUTO PECAS E SERVICOS LTDA	15.395.432/0001-16	\N	\N	f	f	\N	\N	UNIAO AUTO PECAS E SERVICOS LTDA	\N	AV UM, 227, ********, PARQUE VENEZA, Santana do Paraiso, MG - CEP: 35179000.	\N	\N	\N	\N	\N	silv_monica@hotmail.com	\N	\N	\N	Ativa	2026-01-26 17:02:42.103	2026-01-26 17:02:42.103
+24f017f7-f075-41d3-afca-5d7ff0cd114c	VALERIA MORAIS & CIA LTDA	33.499.886/0001-19	\N	\N	f	f	\N	\N	VALERIA MORAIS & CIA LTDA	\N	AV CARLOS CHAGAS, 375, LOJA 02, CIDADE NOBRE, Ipatinga, MG - CEP: 35162359.	\N	\N	\N	\N	\N	\N	\N	\N	\N	Ativa	2026-01-26 17:02:42.11	2026-01-26 17:02:42.11
+2506a5f9-b0f8-4353-a322-2498a81a18cf	VENANCIO E CARDOSO LTDA	15.731.742/0001-64	\N	\N	f	f	\N	\N	VENANCIO E CARDOSO LTDA	\N	rua castanheiras, 110, reves do belem, Bom Jesus do Galho, MG - CEP: 35340000.	\N	\N	\N	\N	\N	machadosupermercado2023@outlook.com	\N	\N	\N	Ativa	2026-01-26 17:02:42.118	2026-01-26 17:02:42.118
+8bb59f1f-375e-469a-9613-d8f212a004f9	VENTURA FERREIRA MATERIAIS DE CONSTRUCAO LTDA	37.829.034/0001-01	\N	\N	f	f	\N	\N	VENTURA FERREIRA MATERIAIS DE CONSTRUCAO LTDA	\N	R LAMARTINE, 163, ESPLANADA, Caratinga, MG - CEP: 35300244.	\N	\N	\N	\N	\N	\N	\N	\N	\N	Ativa	2026-01-26 17:02:42.125	2026-01-26 17:02:42.125
+bd52ffc3-efbb-46e2-aa77-479d24992962	VIVI FAST FOODS & LANCHES LTDA	14.675.841/0001-03	\N	\N	f	f	\N	\N	VIVI FAST FOODS & LANCHES LTDA	\N	R NOVA YORQUE, 132, BETHANIA, Ipatinga, MG - CEP: 35164093.	\N	\N	\N	\N	\N	\N	\N	\N	\N	Ativa	2026-01-26 17:02:42.132	2026-01-26 17:02:42.132
+c41cd2a1-0748-4c64-9800-8226e9607654	VM  PEÇAS E SERVIÇOS LTDA	07.428.579/0001-37	\N	\N	f	f	\N	\N	VM  PEÇAS E SERVIÇOS LTDA	\N	Rua Beta, 475, Nova Esperança, Timoteo, MG - CEP: 35181105.	\N	\N	\N	\N	\N	vmfreios@yahoo.com.br	\N	\N	\N	Ativa	2026-01-26 17:02:42.138	2026-01-26 17:02:42.138
+b87d47ba-70dc-4633-82ab-8e31790431b4	WILSON JUNIO MARQUES  05569823638	23.568.970/0001-93	\N	\N	f	f	\N	\N	WILSON JUNIO MARQUES	\N	RUA JABAQUARA, 398, PARQUE CARAVELAS, Santana do Paraiso, MG - CEP: 35179000.	\N	\N	\N	\N	\N	\N	\N	\N	\N	Ativa	2026-01-26 17:02:42.145	2026-01-26 17:02:42.145
+9ebac5ec-4089-4f30-93fd-832954b202b4	A&R INDUSTRIA MECANICA	51.422.872/0001-89	\N	\N	t	f	Contribuinte ICMS	0046652820064	ALVES & ROCHA INDUSTRIA MECANICA LTDA	35164369	RAIMUNDO GOMES DOS REIS	20	TAUBAS	IPATINGA	MG	A&R INDUSTRIA MECANICA	\N	\N	\N	\N	Ativa	2026-01-26 18:40:29.89	2026-01-26 18:40:29.89
+a05df3a4-7f11-4408-b1ab-83322f366c37	CN AQUA PET LTDA	57.350.645/0001-71	\N	\N	t	f			CN AQUA PET LTDA		Rua Israel Pinheiro, 3579, Centro, Governador Valadares, MG - CEP: 35010131.					\N	\N	\N	\N	\N	Ativa	2026-01-26 17:02:40.828	2026-02-02 19:59:13.347
+\.
+
+
+--
+-- TOC entry 5118 (class 0 OID 16529)
+-- Dependencies: 225
+-- Data for Name: FiscalBatch; Type: TABLE DATA; Schema: public; Owner: postgres
+--
+
+COPY public."FiscalBatch" (id, "companyId", competence, type, quantity, notes, "launchDone", "billingDone", "createdBy", "createdAt") FROM stdin;
+6043f8d0-2d31-4a4f-9799-cd3806e47c04	7a864c1a-2d86-49cd-9e8c-276dbbb24cf0	2026-02	Entrada	0	\N	f	f	Sistema	2026-02-02 11:13:06.924
+b93f9112-1831-4c9f-932c-1c90e0e0a357	7a864c1a-2d86-49cd-9e8c-276dbbb24cf0	2026-02	Saida	0	\N	f	f	Sistema	2026-02-02 11:13:06.931
+1e6ac568-1966-4c24-b8dc-1fcfca0e357b	fae43d3f-f0ba-4b05-b80e-986ebcc87da9	2026-02	Entrada	0	\N	f	f	Sistema	2026-02-02 11:13:06.947
+2397431e-2335-41e3-a596-124e3a1aa415	fae43d3f-f0ba-4b05-b80e-986ebcc87da9	2026-02	Saida	0	\N	f	f	Sistema	2026-02-02 11:13:06.956
+\.
+
+
+--
+-- TOC entry 5116 (class 0 OID 16498)
+-- Dependencies: 223
+-- Data for Name: FiscalFile; Type: TABLE DATA; Schema: public; Owner: postgres
+--
+
+COPY public."FiscalFile" (id, "companyId", responsible, observation, "dayOfMonth", "nextGeneration", active, "createdAt", "updatedAt") FROM stdin;
+155692e6-7b2d-49bf-b093-cdde271079d6	4b869fed-e1d9-46db-a1fb-5795dae26cd6	\N	\N	1	2026-02-01 03:00:00	t	2026-02-02 19:57:56.592	2026-02-02 20:01:21.464
+ca6f21ea-d016-4005-8807-767e6be7d757	60e0fc19-4aef-44e3-9219-705d6e32db19	\N	\N	1	2026-02-01 03:00:00	t	2026-02-02 11:13:06.872	2026-02-02 20:01:21.47
+6ab84732-08f9-4ad8-8aaa-2b7aee438433	c2734efd-c7a7-440e-8e84-b953ab9e90f1	\N	\N	1	2026-02-01 03:00:00	t	2026-02-02 11:13:06.893	2026-02-02 20:01:21.474
+fa06fcaa-fbb2-4772-98ff-8c567bb22df5	860215eb-0d80-4cec-8dc1-77f16aaaed17	\N	\N	1	2026-02-01 03:00:00	t	2026-02-02 11:13:06.901	2026-02-02 20:01:21.478
+0756d8ac-41d4-4e54-ae06-5243292fe8cf	7a864c1a-2d86-49cd-9e8c-276dbbb24cf0	\N	\N	1	2026-02-01 03:00:00	t	2026-02-02 11:13:06.908	2026-02-02 20:01:21.485
+f0c1ac05-e9b4-4eae-bfde-70e824669b2d	fae43d3f-f0ba-4b05-b80e-986ebcc87da9	\N	\N	1	2026-02-01 03:00:00	t	2026-02-02 11:13:06.939	2026-02-02 20:01:21.497
+4ad80288-5193-4260-bf41-18901225dd1a	d1f7ee45-a651-41c3-a745-f8d2a0632129	\N	\N	1	2026-02-01 03:00:00	t	2026-02-02 11:13:06.963	2026-02-02 20:01:21.505
+c8ee3dde-6443-4dc5-b600-be1f907748e7	8570af09-5b13-4686-8ccd-54ff0aada8a3	\N	\N	1	2026-02-01 03:00:00	t	2026-02-02 20:01:21.508	2026-02-02 20:01:21.508
+0f951363-1a52-441e-8013-c4aaadbb7417	3b859bc1-7c4d-42f6-b523-6b5090f46639	\N	\N	1	2026-02-01 03:00:00	t	2026-02-02 19:57:13.572	2026-02-02 20:01:21.513
+3b9aee21-b082-4358-8de8-515194f7f17f	9ebac5ec-4089-4f30-93fd-832954b202b4	\N	\N	1	2026-02-01 03:00:00	t	2026-02-02 11:13:06.977	2026-02-02 20:01:21.517
+e6627036-ef0d-460c-87d2-def6e5252c41	a05df3a4-7f11-4408-b1ab-83322f366c37	\N	\N	1	2026-02-01 03:00:00	t	2026-02-02 19:59:20.743	2026-02-02 20:01:21.522
+\.
+
+
+--
+-- TOC entry 5117 (class 0 OID 16514)
+-- Dependencies: 224
+-- Data for Name: FiscalFileRun; Type: TABLE DATA; Schema: public; Owner: postgres
+--
+
+COPY public."FiscalFileRun" (id, "companyId", competence, "generatedAt", "generatedBy", notes, status) FROM stdin;
+\.
+
+
+--
+-- TOC entry 5121 (class 0 OID 17473)
+-- Dependencies: 228
+-- Data for Name: SystemLog; Type: TABLE DATA; Schema: public; Owner: postgres
+--
+
+COPY public."SystemLog" (id, type, message, "createdAt") FROM stdin;
+25f95eb0-45f8-4324-bf65-4e047606f115	monthly	Chamados do mes 2026-01 gerados para 1 empresa(s).	2026-01-26 14:50:08.599
+a5911b22-8913-4029-b020-309bf7afa63b	monthly	Chamados do mes 2026-01 gerados para 2 empresa(s).	2026-01-26 14:51:34.17
+6bc393bb-cf30-4aad-8da8-1810f0d7336f	monthly	Chamados do mes 2026-02 gerados para 8 empresa(s).	2026-02-02 11:13:06.981
+fffcae83-6432-4f6a-8d87-3ad3b62699f1	monthly	Chamados do mes 2026-02 gerados para 8 empresa(s).	2026-02-02 11:13:12.269
+38624dea-8239-4b3f-8dcf-dbe2e6dccac4	monthly	Chamados do mes 2026-02 gerados para 8 empresa(s).	2026-02-02 11:13:12.377
+9d4ce05d-ad6e-4279-9c2e-e77ab424d0bd	monthly	Chamados do mes 2026-02 gerados para 8 empresa(s).	2026-02-02 11:13:12.413
+6373a9bc-f967-4f75-ba9b-791196a624c7	monthly	Chamados do mes 2026-02 gerados para 8 empresa(s).	2026-02-02 19:52:56.428
+4191c4b6-e512-4bb6-8ba0-c645ec769c25	monthly	Chamados do mes 2026-02 gerados para 7 empresa(s).	2026-02-02 19:53:33.957
+54856868-b6ce-4443-93d8-f51a7d64d3b8	monthly	Chamados do mes 2026-02 gerados para 8 empresa(s).	2026-02-02 19:57:13.585
+95498863-36d6-4299-8722-2d15001ef18b	monthly	Chamados do mes 2026-02 gerados para 8 empresa(s).	2026-02-02 19:57:20.042
+dcaf868d-03b8-4768-aa70-27e4c4ed7515	monthly	Chamados do mes 2026-02 gerados para 9 empresa(s).	2026-02-02 19:57:56.645
+22c78b93-bc86-435d-98b6-d9cc0013971d	monthly	Chamados do mes 2026-02 gerados para 9 empresa(s).	2026-02-02 19:58:05.853
+b1d0badb-0476-4c37-9c62-3f878a85496b	monthly	Chamados do mes 2026-02 gerados para 10 empresa(s).	2026-02-02 19:59:20.745
+743612f6-3c26-4a4f-9869-4b578aac6888	monthly	Chamados do mes 2026-02 gerados para 10 empresa(s).	2026-02-02 19:59:46.809
+5dd0fb03-c4e4-4fcb-b738-9ca566bed8d6	monthly	Chamados do mes 2026-02 gerados para 11 empresa(s).	2026-02-02 20:01:21.524
+\.
+
+
+--
+-- TOC entry 5120 (class 0 OID 16987)
+-- Dependencies: 227
+-- Data for Name: User; Type: TABLE DATA; Schema: public; Owner: postgres
+--
+
+COPY public."User" (id, name, email, "passwordHash", role, active, "createdAt", "updatedAt") FROM stdin;
+0cbd269c-ec40-4e25-9fa0-c25eca62543e	Hauan Felipe	hauan.felipe@stage.local	stage2020	Colaborador	t	2026-01-23 17:34:03.284	2026-01-23 18:05:16.795
+6320fd82-4197-4fa8-87f3-4649431f7557	Lucas Gomes	lucas.gomes@stage.local	stage2020	Colaborador	t	2026-01-23 17:34:03.591	2026-01-23 18:05:16.95
+e07b29fa-0270-43e3-8128-b31d53045a1e	Arielton Fernandes	arielton.fernandes@stage.local	stage2020	Colaborador	t	2026-01-23 17:34:03.6	2026-01-23 18:05:16.956
+4402eeed-05d0-4a95-9ab1-1107ba18ad1a	Kaiky Rogis	kaiky.rogis@stage.local	stage2020	Colaborador	t	2026-01-23 17:34:03.606	2026-01-23 18:05:16.962
+de446b19-86af-4f90-886e-93d3750fb16e	Kamila Coffler	kamila.coffler@stage.local	stage2020	Colaborador	t	2026-01-23 17:34:03.616	2026-01-23 18:05:16.968
+512d5164-fdfc-49b1-b0e8-187776694ab6	Laura Abreu	laura.abreu@stage.local	stage2020	Colaborador	t	2026-01-23 17:34:03.622	2026-01-23 18:05:16.973
+\.
+
+
+--
+-- TOC entry 5114 (class 0 OID 16469)
+-- Dependencies: 221
+-- Data for Name: WorkOrder; Type: TABLE DATA; Schema: public; Owner: postgres
+--
+
+COPY public."WorkOrder" (id, number, "companyId", type, responsible, "dueDate", priority, status, description, "createdAt") FROM stdin;
+\.
+
+
+--
+-- TOC entry 5115 (class 0 OID 16486)
+-- Dependencies: 222
+-- Data for Name: WorkOrderHistory; Type: TABLE DATA; Schema: public; Owner: postgres
+--
+
+COPY public."WorkOrderHistory" (id, "workOrderId", title, description, at) FROM stdin;
+\.
+
+
+--
+-- TOC entry 5112 (class 0 OID 16391)
+-- Dependencies: 219
+-- Data for Name: _prisma_migrations; Type: TABLE DATA; Schema: public; Owner: postgres
+--
+
+COPY public._prisma_migrations (id, checksum, finished_at, migration_name, logs, rolled_back_at, started_at, applied_steps_count) FROM stdin;
+bebc5e0e-d20a-4b20-98ce-bb1ca39b5b2d	da35f303703a59ef6e7eda3bbcd2ba1bb3dc55de2df04cc89819d3f5d7f7b764	2026-01-23 13:43:09.606111-03	20260123164309_init	\N	\N	2026-01-23 13:43:09.437196-03	1
+7a58f39c-3413-46f1-ba78-4bb606e359d2	d0af8d87175aba07a4d2ab9c258dff22a9ef97c756a057c38c45cfef13838c7d	2026-01-23 13:57:10.479488-03	20260123165710_add_user_model	\N	\N	2026-01-23 13:57:10.441464-03	1
+\.
+
+
+--
+-- TOC entry 4952 (class 2606 OID 16560)
+-- Name: CalendarEvent CalendarEvent_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public."CalendarEvent"
+    ADD CONSTRAINT "CalendarEvent_pkey" PRIMARY KEY (id);
+
+
+--
+-- TOC entry 4934 (class 2606 OID 16468)
+-- Name: Company Company_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public."Company"
+    ADD CONSTRAINT "Company_pkey" PRIMARY KEY (id);
+
+
+--
+-- TOC entry 4949 (class 2606 OID 16546)
+-- Name: FiscalBatch FiscalBatch_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public."FiscalBatch"
+    ADD CONSTRAINT "FiscalBatch_pkey" PRIMARY KEY (id);
+
+
+--
+-- TOC entry 4946 (class 2606 OID 16528)
+-- Name: FiscalFileRun FiscalFileRun_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public."FiscalFileRun"
+    ADD CONSTRAINT "FiscalFileRun_pkey" PRIMARY KEY (id);
+
+
+--
+-- TOC entry 4943 (class 2606 OID 16513)
+-- Name: FiscalFile FiscalFile_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public."FiscalFile"
+    ADD CONSTRAINT "FiscalFile_pkey" PRIMARY KEY (id);
+
+
+--
+-- TOC entry 4958 (class 2606 OID 17484)
+-- Name: SystemLog SystemLog_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public."SystemLog"
+    ADD CONSTRAINT "SystemLog_pkey" PRIMARY KEY (id);
+
+
+--
+-- TOC entry 4956 (class 2606 OID 17004)
+-- Name: User User_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public."User"
+    ADD CONSTRAINT "User_pkey" PRIMARY KEY (id);
+
+
+--
+-- TOC entry 4939 (class 2606 OID 16497)
+-- Name: WorkOrderHistory WorkOrderHistory_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public."WorkOrderHistory"
+    ADD CONSTRAINT "WorkOrderHistory_pkey" PRIMARY KEY (id);
+
+
+--
+-- TOC entry 4937 (class 2606 OID 16485)
+-- Name: WorkOrder WorkOrder_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public."WorkOrder"
+    ADD CONSTRAINT "WorkOrder_pkey" PRIMARY KEY (id);
+
+
+--
+-- TOC entry 4932 (class 2606 OID 16404)
+-- Name: _prisma_migrations _prisma_migrations_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public._prisma_migrations
+    ADD CONSTRAINT _prisma_migrations_pkey PRIMARY KEY (id);
+
+
+--
+-- TOC entry 4950 (class 1259 OID 16566)
+-- Name: CalendarEvent_companyId_idx; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX "CalendarEvent_companyId_idx" ON public."CalendarEvent" USING btree ("companyId");
+
+
+--
+-- TOC entry 4947 (class 1259 OID 16565)
+-- Name: FiscalBatch_companyId_idx; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX "FiscalBatch_companyId_idx" ON public."FiscalBatch" USING btree ("companyId");
+
+
+--
+-- TOC entry 4944 (class 1259 OID 16564)
+-- Name: FiscalFileRun_companyId_idx; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX "FiscalFileRun_companyId_idx" ON public."FiscalFileRun" USING btree ("companyId");
+
+
+--
+-- TOC entry 4941 (class 1259 OID 16563)
+-- Name: FiscalFile_companyId_idx; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX "FiscalFile_companyId_idx" ON public."FiscalFile" USING btree ("companyId");
+
+
+--
+-- TOC entry 4953 (class 1259 OID 17005)
+-- Name: User_email_key; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE UNIQUE INDEX "User_email_key" ON public."User" USING btree (email);
+
+
+--
+-- TOC entry 4954 (class 1259 OID 17442)
+-- Name: User_name_key; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE UNIQUE INDEX "User_name_key" ON public."User" USING btree (name);
+
+
+--
+-- TOC entry 4940 (class 1259 OID 16562)
+-- Name: WorkOrderHistory_workOrderId_idx; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX "WorkOrderHistory_workOrderId_idx" ON public."WorkOrderHistory" USING btree ("workOrderId");
+
+
+--
+-- TOC entry 4935 (class 1259 OID 16561)
+-- Name: WorkOrder_companyId_idx; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX "WorkOrder_companyId_idx" ON public."WorkOrder" USING btree ("companyId");
+
+
+--
+-- TOC entry 4964 (class 2606 OID 17468)
+-- Name: CalendarEvent CalendarEvent_companyId_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public."CalendarEvent"
+    ADD CONSTRAINT "CalendarEvent_companyId_fkey" FOREIGN KEY ("companyId") REFERENCES public."Company"(id) ON UPDATE CASCADE ON DELETE CASCADE;
+
+
+--
+-- TOC entry 4963 (class 2606 OID 17463)
+-- Name: FiscalBatch FiscalBatch_companyId_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public."FiscalBatch"
+    ADD CONSTRAINT "FiscalBatch_companyId_fkey" FOREIGN KEY ("companyId") REFERENCES public."Company"(id) ON UPDATE CASCADE ON DELETE CASCADE;
+
+
+--
+-- TOC entry 4962 (class 2606 OID 17458)
+-- Name: FiscalFileRun FiscalFileRun_companyId_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public."FiscalFileRun"
+    ADD CONSTRAINT "FiscalFileRun_companyId_fkey" FOREIGN KEY ("companyId") REFERENCES public."Company"(id) ON UPDATE CASCADE ON DELETE CASCADE;
+
+
+--
+-- TOC entry 4961 (class 2606 OID 17453)
+-- Name: FiscalFile FiscalFile_companyId_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public."FiscalFile"
+    ADD CONSTRAINT "FiscalFile_companyId_fkey" FOREIGN KEY ("companyId") REFERENCES public."Company"(id) ON UPDATE CASCADE ON DELETE CASCADE;
+
+
+--
+-- TOC entry 4960 (class 2606 OID 17448)
+-- Name: WorkOrderHistory WorkOrderHistory_workOrderId_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public."WorkOrderHistory"
+    ADD CONSTRAINT "WorkOrderHistory_workOrderId_fkey" FOREIGN KEY ("workOrderId") REFERENCES public."WorkOrder"(id) ON UPDATE CASCADE ON DELETE CASCADE;
+
+
+--
+-- TOC entry 4959 (class 2606 OID 17443)
+-- Name: WorkOrder WorkOrder_companyId_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public."WorkOrder"
+    ADD CONSTRAINT "WorkOrder_companyId_fkey" FOREIGN KEY ("companyId") REFERENCES public."Company"(id) ON UPDATE CASCADE ON DELETE CASCADE;
+
+
+-- Completed on 2026-02-02 17:43:01
+
+--
+-- PostgreSQL database dump complete
+--
+
+\unrestrict CIUC1wz2DDo0rzxbJ3RapP66mrsWrcPAB1dtFJgD1eAsd6FvdZ4DxlgmP7hRLLB
+

@@ -76,7 +76,9 @@ export default function WorkOrders({ view = "pending" }: Props) {
     [rows]
   );
 
-  const finishedByCompany = useMemo(() => {
+  const finishedByCompany = useMemo<
+    { companyId: string; companyName: string; items: WorkOrder[] }[]
+  >(() => {
     if (view !== "finished") return [];
     const map = new Map<string, { companyId: string; companyName: string; items: WorkOrder[] }>();
     filtered.forEach((order) => {

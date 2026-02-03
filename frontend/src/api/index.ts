@@ -128,17 +128,6 @@ const mapFiscalFile = (file: ApiFiscalFile): FiscalFile => ({
   active: file.active,
 });
 
-const mapFiscalFileRun = (run: ApiFiscalFileRun, companyName: string): FiscalFileRun => ({
-  id: run.id,
-  companyId: run.companyId,
-  companyName,
-  competence: run.competence,
-  generatedAt: run.generatedAt,
-  generatedBy: run.generatedBy,
-  notes: run.notes,
-  status: run.status,
-});
-
 const mapFiscalBatch = (batch: ApiFiscalBatch): FiscalBatch => ({
   id: batch.id,
   companyId: batch.companyId,
@@ -207,6 +196,7 @@ export const listFiscalFilesPending = async () =>
   apiGet<ApiFiscalFile[]>("/fiscal-files/pending").then((rows) => rows.map(mapFiscalFile));
 export const updateFiscalFileConfig = async (id: string, input: { responsible?: string; observation?: string }) =>
   apiPatch<FiscalFile>(`/fiscal-files/${id}`, input);
+export const deleteFiscalFileConfig = async (id: string) => apiDelete<void>(`/fiscal-files/${id}`);
 export const markFiscalFileGenerated = async (
   id: string,
   input: { responsible?: string; notes?: string }
@@ -238,6 +228,7 @@ export const createFiscalBatch = async (input: {
 }) => apiPost<ApiFiscalBatch>("/fiscal-batches", input).then(mapFiscalBatch);
 export const updateFiscalBatch = async (id: string, input: Partial<FiscalBatch>) =>
   apiPatch<ApiFiscalBatch>(`/fiscal-batches/${id}`, input).then(mapFiscalBatch);
+export const deleteFiscalBatch = async (id: string) => apiDelete<void>(`/fiscal-batches/${id}`);
 
 export const listCalendarEvents = async (companyId?: string, dateFrom?: string, dateTo?: string) => {
   const params = new URLSearchParams();
@@ -261,3 +252,6 @@ export const listSystemLogs = async (limit = 6) =>
   apiGet<SystemLog[]>(`/system/logs?limit=${limit}`);
 
 export const runMonthlyJobs = async () => apiPost<void>("/system/run-monthly", {});
+
+export const runFiscalFilesJobs = async () => apiPost<void>("/system/run-monthly", {});
+export const runFiscalProductionJobs = async () => apiPost<void>("/system/run-monthly", {});

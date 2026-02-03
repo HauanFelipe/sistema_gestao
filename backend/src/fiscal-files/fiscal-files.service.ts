@@ -101,4 +101,10 @@ export class FiscalFilesService {
 
     return run;
   }
+
+  async remove(id: string) {
+    const exists = await this.prisma.fiscalFile.findUnique({ where: { id } });
+    if (!exists) throw new NotFoundException("Configuracao nao encontrada");
+    return this.prisma.fiscalFile.delete({ where: { id } });
+  }
 }

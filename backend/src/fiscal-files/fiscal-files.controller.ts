@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, Patch, Post, Query } from "@nestjs/common";
+import { Body, Controller, Delete, Get, Param, Patch, Post, Query } from "@nestjs/common";
 import { FiscalFilesService } from "./fiscal-files.service";
 import { MarkGeneratedDto } from "./dto/mark-generated.dto";
 import { UpdateFiscalFileDto } from "./dto/update-fiscal-file.dto";
@@ -35,5 +35,10 @@ export class FiscalFilesController {
   @Post(":id/generate")
   markGenerated(@Param("id") id: string, @Body() data: MarkGeneratedDto) {
     return this.fiscalFilesService.markGenerated(id, data);
+  }
+
+  @Delete(":id")
+  remove(@Param("id") id: string) {
+    return this.fiscalFilesService.remove(id);
   }
 }

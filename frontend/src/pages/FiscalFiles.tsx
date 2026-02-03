@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState, type ReactNode } from "react";
-import { Pencil, CheckCircle2 } from "lucide-react";
+import { Pencil, CheckCircle2, Trash } from "lucide-react";
 import Badge from "../shared/Badge";
 import EmptyState from "../shared/EmptyState";
 import Modal from "../shared/Modal";
@@ -8,7 +8,9 @@ import {
   listCompanies,
   listFiscalFileRuns,
   listFiscalFiles,
+  deleteFiscalFileConfig,
   markFiscalFileGenerated,
+  runFiscalFilesJobs,
   updateFiscalFileConfig,
 } from "../api";
 import type { Company, FiscalFile, FiscalFileRun } from "../mocks/types";
@@ -66,6 +68,15 @@ export default function FiscalFiles({ view = "pending" }: Props) {
   const refresh = () => {
     listFiscalFiles().then(setItems).catch(() => setItems([]));
     listFiscalFileRuns().then(setRuns).catch(() => setRuns([]));
+  };
+
+  const handleGenerate = async () => {
+    try {
+      await runFiscalFilesJobs();
+      refresh();
+    } catch {
+      alert("Nao foi possivel abrir os chamados do mes.");
+    }
   };
 
   const openEdit = (item: FiscalFile) => {
@@ -133,6 +144,16 @@ export default function FiscalFiles({ view = "pending" }: Props) {
     refresh();
   };
 
+  const handleDelete = async (item: FiscalFile) => {
+    if (!window.confirm("Tem certeza que deseja excluir este chamado?")) return;
+    try {
+      await deleteFiscalFileConfig(item.id);
+      refresh();
+    } catch {
+      alert("Nao foi possivel excluir o chamado.");
+    }
+  };
+
   const runsByCompany = useMemo(() => {
     const map = new Map<string, FiscalFileRun[]>();
     runs.forEach((run) => {
@@ -164,7 +185,14 @@ export default function FiscalFiles({ view = "pending" }: Props) {
             Configure a geracao mensal de arquivos por empresa.
           </p>
         </div>
-        {view === "pending" && <div />}
+        {view === "pending" && (
+          <button
+            className="inline-flex items-center gap-2 rounded-xl border border-gray-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-4 py-3 font-semibold hover:bg-gray-50 dark:hover:bg-slate-800"
+            onClick={handleGenerate}
+          >
+            Abrir chamados do mes
+          </button>
+        )}
       </div>
 
       <div className="flex items-center gap-2">
@@ -240,6 +268,13 @@ export default function FiscalFiles({ view = "pending" }: Props) {
                           onClick={() => openEdit(item)}
                         >
                           <Pencil size={18} />
+                        </button>
+                        <button
+                          className="h-9 w-9 rounded-lg border border-red-200 dark:border-red-900 bg-white dark:bg-slate-900 flex items-center justify-center hover:bg-red-50 dark:hover:bg-red-950/40 text-red-600"
+                          title="Excluir"
+                          onClick={() => handleDelete(item)}
+                        >
+                          <Trash size={18} />
                         </button>
                       </div>
                     </td>

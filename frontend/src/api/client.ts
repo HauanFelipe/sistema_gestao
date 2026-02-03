@@ -24,7 +24,11 @@ export async function apiRequest<T>(path: string, options: ApiOptions = {}): Pro
   if (response.status === 204) {
     return undefined as T;
   }
-  return (await response.json()) as T;
+  const text = await response.text();
+  if (!text) {
+    return undefined as T;
+  }
+  return JSON.parse(text) as T;
 }
 
 export const apiGet = <T>(path: string) => apiRequest<T>(path);
